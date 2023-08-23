@@ -37,31 +37,31 @@ export const enum TokenType {
 	EOF = 'EOF', // End of file
 
 	// Keywords
-	Def = 'Def',
+	Definir = 'Def',
 	Const = 'Const',
-	Funcion = 'Funcion',
+	Funcion = 'Fn',
 	Si = 'Si',
-	Entonces = 'Entonces',
-	Retorna = 'Retorna',
-	Mientras = 'Mientras',
-	Romper = 'Romper',
-	Continuar = 'Continuar',
+	Entonces = 'Ent',
+	Retorna = 'Ret',
+	Mientras = 'Mien',
+	Romper = 'Rom',
+	Continuar = 'Cont',
 	Clase = 'Clase',
-	Estatico = 'Estatico',
+	Estatico = 'Est',
 }
 export type Token = PreToken<TokenType> & {file:string};
 
 // reserved keywords
 const KEYWORDS: Record<string, TokenType> = {
-	def: TokenType.Def,
+	def: TokenType.Definir,
 	const: TokenType.Const,
 	fn: TokenType.Funcion,
 	si: TokenType.Si,
-	entonces: TokenType.Entonces,
+	ent: TokenType.Entonces,
 	ret: TokenType.Retorna,
-	mientras: TokenType.Mientras,
-	romper: TokenType.Romper,
-	continuar: TokenType.Continuar,
+	mien: TokenType.Mientras,
+	rom: TokenType.Romper,
+	cont: TokenType.Continuar,
 	clase: TokenType.Clase,
 	est: TokenType.Estatico,
 };

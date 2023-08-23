@@ -101,7 +101,7 @@ export default class Parser {
 	private parse_stmt(isFunction = false, isLoop = false, isClassDecl = false) {
 		const token = this.at();
 		switch (token.type) {
-			case TokenType.Def:
+			case TokenType.Definir:
 			case TokenType.Const:
 				return this.parse_var_decl();
 			case TokenType.Funcion:
@@ -112,7 +112,7 @@ export default class Parser {
 				new InvalidSyntaxError(
 					token.col,
 					token.row,
-					'No puedes usar "entonces" sin un "si"'
+					`No puede usar "${TokenType.Entonces.toLowerCase()}" sin un "${TokenType.Si.toLowerCase()}"`
 				).throw();
 				break;
 			case TokenType.Retorna:
@@ -130,7 +130,7 @@ export default class Parser {
 					new InvalidSyntaxError(
 						token.col,
 						token.row,
-						'No puedes usar "romper" fuera de un ciclo'
+						`No puedes usar "${TokenType.Romper.toLowerCase()}" fuera de un ciclo`
 					).throw();
 				this.eat();
 				return {
@@ -143,7 +143,7 @@ export default class Parser {
 					new InvalidSyntaxError(
 						token.col,
 						token.row,
-						'No puedes usar "continuar" fuera de un ciclo'
+						`No puede usar "${TokenType.Continuar}" fuera de un ciclo`
 					).throw();
 				this.eat();
 				return {
@@ -180,7 +180,7 @@ export default class Parser {
 		return this.parse_expr();
 	}
 	private parse_if_stmt(isFunction = false, isLoop = false): Stmt {
-		const token = this.expect(TokenType.Si, 'No se encontró "si"');
+		const token = this.expect(TokenType.Si, `No se encontró "${TokenType.Si.toLowerCase()}"`);
 
 		this.expect(TokenType.OpenParen, 'No se encontró "("');
 		const condition = this.parse_expr();
@@ -230,7 +230,7 @@ export default class Parser {
 	private parse_return_stmt(): ReturnStatement {
 		const { col, row, file } = this.expect(
 			TokenType.Retorna,
-			'No se encontró la palabra clave "retorna"'
+			`No se encontró la palabra clave "${TokenType.Retorna.toLowerCase()}""`
 		);
 		const value = this.parse_expr();
 		return {
@@ -244,7 +244,7 @@ export default class Parser {
 	private parse_func_decl(isVar = false): FunctionDeclaration {
 		const { col, row, file } = this.expect(
 			TokenType.Funcion,
-			'No se encontró la palabra clave "funcion"'
+			`No se encontro la palabra clave "${TokenType.Funcion.toLowerCase()}"`
 		);
 
 		const nextToken = this.at();
@@ -287,7 +287,7 @@ export default class Parser {
 	private parse_class_decl(): ClassDeclaration {
 		const { col, row, file } = this.expect(
 			TokenType.Clase,
-			'No se encontró la palabra clave "clase"'
+			`No se encontró la palabra clave "${TokenType.Clase.toLowerCase()}"`
 		);
 		const name = this.expect(
 			TokenType.Identifier,
@@ -450,7 +450,7 @@ export default class Parser {
 			}
 			if (operator.length >= 2) {
 				// != == !== ===
-				const right = this.parse_assignment_expr(operator);
+				const right = this.parse_object_expr()
 				return {
 					kind: 'BinaryExpr',
 					left,
@@ -499,13 +499,13 @@ export default class Parser {
 				file,
 			};
 		}
-		if (this.at().type == TokenType.CloseAngle) {
-			this.eat(); // Advance the close angle token
-			return this.parse_assignment_expr('<', left)
-		}
 		if (this.at().type == TokenType.OpenAngle) {
 			this.eat(); // Advance the open angle token
 			return this.parse_assignment_expr('<', left)
+		}
+		if (this.at().type == TokenType.CloseAngle) {
+			this.eat(); // Advance the close angle token
+			return this.parse_assignment_expr('>', left)
 		}
 		if(operator){
 			return {

@@ -1,5 +1,5 @@
 def i = 0;
-mientras(i>5){
+mien(i<=5){
   i = i + 1
   pintar(i)
 }

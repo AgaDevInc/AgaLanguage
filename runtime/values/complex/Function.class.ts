@@ -20,7 +20,7 @@ const defaultDeclaration: FunctionDeclaration = {
 };
 const defaultEnv = new Environment();
 let use = false;
-const fnProperties = new Properties(Runtime.getProperties());
+const fnProperties = new Properties(Runtime.loadProperties());
 
 export type TFunction = (
 	name: string,

@@ -1,0 +1,22 @@
+{
+  "version": "2",
+  "remote": {
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/": "3912b2add47bb085f29be038a0a35dc37c86e597ccbefc61682150aec929e67c",
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/Angle.class.ts": "1560e1d6648f0f10f9f7311c0b1fee058f37f25d1cb7f491b3d7963eeaefdf62",
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/ComplexNumber.class.ts": "c006e4cfd419cd476efa519affbfb771e9cd65a2e2ce676293bddd1f7b6b1f80",
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/Parser.class.ts": "930ea6e9d14607e369e7a32b580b9d6c79e050ba52c46f626f79db9daf59fb01",
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/Polar.class.ts": "d49e69680ea734db980b3c7502781d1f7c96ffdfa5316767a2ff6f7eef9f0aee",
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/constants.ts": "ac7278910f2230ba9bd8242f64a92bbe96fe7f779bcd36f3e0bddc346f77cff6",
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/functions.ts": "e6df7b2f685da8bae0c47821ca164f9bfe8121a7577a3d45dd320f2bb80f2701",
+    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/util.ts": "11ac72206525e9d5f19fad76b2631c74717c8edc44833ec1b3a38dfb024a1b6c",
+    "https://agacdn.onrender.com/AgaDev:colors@1.0.0/": "c8c6ffaea2aabc39dd705837f107ab9c479ab6aae37e5d1fd9cade36554c3425",
+    "https://agacdn.onrender.com/AgaDev:colors@1.0.0/constants.ts": "de1af73c44584e3f237f0423fbe61cc369b8e64b97414ea24659f320aa906d42",
+    "https://agacdn.onrender.com/AgaDev:colors@1.0.0/functions.ts": "d3e8ae516fa1ee47199bec1f2b7412d5dab94c5bd803f388d300b7a6c3444772",
+    "https://agacdn.onrender.com/AgaDev:utils@1.0.0/tokenize.fn.ts": "a56a8605e679fbf4dfeae3b491d99fcc21cbd66c417226e7d4f40a10760f4bb2",
+    "https://agacdn.onrender.com/AgaDev:utils@1.0.0/util.ts": "49b352d615452b1d05b88e04337e8b841b259005914126827c82629e6c981697",
+    "https://agacdn.onrender.com/AgaDev:utils@1.0.0/validation.ts": "af79fae952a5b396f269a9c377dc5e196a50d55e8194a3e3a0cefe7e54f42250",
+    "https://agacdn.onrender.com/AgaDev:utils@1.1.0/Inspectable.class.ts": "421946a3320608e2c12a8255dc10a305c27dface94ba16eb290cf24606a5d022",
+    "https://raw.githubusercontent.com/AdrianCraft07/ts-lib/main/Errors.consts.ts": "0a88752e3f923e0af15c1d7f10143961aa3f1157e17d944781d15613c312ceb2",
+    "https://raw.githubusercontent.com/AdrianCraft07/ts-lib/main/tokenize.fn.ts": "d027355b29b8b81ce24fc2576bb695ad8b10223ce0481247a4c8bf8b17ec9181"
+  }
+}

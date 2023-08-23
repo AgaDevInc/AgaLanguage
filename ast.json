@@ -30,19 +30,19 @@
         "left": {
           "kind": "Identifier",
           "symbol": "i",
-          "col": 10,
+          "col": 6,
           "row": 2,
           "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
         },
-        "operator": "<",
+        "operator": "<=",
         "right": {
           "kind": "NumericLiteral",
           "value": "5",
-          "col": 12,
+          "col": 9,
           "row": 2,
           "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
         },
-        "col": 12,
+        "col": 8,
         "row": 2,
         "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
       },

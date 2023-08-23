@@ -15,6 +15,7 @@ export interface IStack{
 }
 
 export async function evaluate(astNode: Stmt | Stmt[], env: Environment, Stack: IStack): Promise<IRuntimeValue>{
+  if(!astNode) return (await import('./values/primitive/Null.class.ts')).default;
   if(Array.isArray(astNode)){
     let result: IRuntimeValue | null = null;
     for(const node of astNode){

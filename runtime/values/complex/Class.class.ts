@@ -9,7 +9,7 @@ import Environment from '../../Environment.class.ts';
 import type { ClassDeclaration } from '../../../frontend/ast.ts';
 
 const InstanceDefault = new Runtime() as AgalClass;
-InstanceDefault.makeInstance = () => new Properties(Runtime.getProperties());
+InstanceDefault.makeInstance = () => new Properties(Runtime.loadProperties());
 InstanceDefault.getConstructor = () => Promise.resolve(null);
 
 export const enum MetaClass {

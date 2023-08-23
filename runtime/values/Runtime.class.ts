@@ -13,7 +13,7 @@ export const defaultStack: IStack = {
 export default class Runtime {
 	#props: Properties;
 	constructor() {
-		this.#props = new Properties(this.type.getProperties());
+		this.#props = new Properties(this.type.loadProperties());
 	}
 	protected async _set(name: string, value: Runtime | Promise<Runtime>) {
 		const data = await Promise.resolve(value);
@@ -23,7 +23,7 @@ export default class Runtime {
 	protected async _get(name: string): Promise<Runtime | null> {
 		const data = await Promise.resolve(this.#props.get(name));
 		if (data) return data;
-		return await this.type.loadProperties(name);
+		return await this.type.getProperty(name, this);
 	}
 	async get(name: string, _stack: IStack = defaultStack): Promise<Runtime> {
 		return (
@@ -98,10 +98,10 @@ export default class Runtime {
 		this.#props = properties;
 		return this;
 	}
-	static getProperties() {
+	static loadProperties() {
 		return RootProperties;
 	}
-	static async loadProperties(name: string): Promise<Runtime | null> {
+	static async getProperty(name: string, _este: Runtime): Promise<Runtime | null> {
 		const AgalFunction = (await import('./complex/Function.class.ts')).default;
 		const AgalString = (await import('./primitive/String.class.ts')).default;
 		if (name === 'aCadena')
@@ -109,21 +109,21 @@ export default class Runtime {
 				'aCadena',
 				new AgalFunction(async (_, __, este) =>
 					AgalString(await este._aCadena())
-				)
+				).setName('aCadena', defaultStack)
 			);
 		if (name === 'aConsola')
 			return await RootProperties.set(
 				'aConsola',
 				new AgalFunction(async (_, __, este) =>
 					AgalString(await este._aConsola())
-				)
+				).setName('aConsola', defaultStack)
 			);
 		if (name === 'aConsolaEn')
 			return await RootProperties.set(
 				'aConsolaEn',
 				new AgalFunction(async (_, __, este) =>
 					AgalString(await este._aConsolaEn())
-				)
+					).setName('aConsolaEn', defaultStack)
 			);
 		return null;
 	}
