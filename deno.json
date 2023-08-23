@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "aga:Colors": "https://agacdn.onrender.com/AgaDev:colors@1.0.0/",
+    "aga:ComplexMath": "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/",
+    "aga:ComplexMath/fns": "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/functions.ts",
+    "aga:ComplexMath/util": "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/util.ts",
+    "aga:ComplexMath/types": "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/types.d.ts"
+  }
+}

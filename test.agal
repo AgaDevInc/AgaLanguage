@@ -1,0 +1,3 @@
+modulo.exporta = fn x(a){
+  pintar(a.aCadena(), a.aConsola(), a.aConsolaEn())
+};
