@@ -615,6 +615,7 @@ export default class Parser {
 			) as unknown as VarDeclaration;
 		const name = data.value;
 		if (this.at().type == TokenType.Equals) {
+			this.eat()
 			return {
 				kind: STATEMENTS_TYPE.VAR_DECLARATION,
 				constant: isConstant,

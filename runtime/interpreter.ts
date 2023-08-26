@@ -26,7 +26,6 @@ export async function evaluate(astNode: Stmt | Stmt[], env: Environment, Stack: 
     return result ? result : (await import('./values/primitive/Null.class.ts')).AgalVoid
   }
   const stack = {value: astNode, next: Stack};
-  console.log(astNode)
   switch(astNode.kind){
     case 'VarDeclaration': return await declaration.variable(astNode, env, stack);
     case 'FunctionDeclaration': return await declaration._function(astNode, env, stack);

@@ -10,6 +10,7 @@ function getName(exp: Expr): string {
 	if (!exp) return '';
 	if (exp.kind === 'Identifier') return exp.symbol;
 	if (exp.kind === 'AssignmentExpr') return getName(exp.assignee);
+	console.log (exp)
 	return '';
 }
 
