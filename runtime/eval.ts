@@ -1,9 +1,9 @@
 import Parser from '../frontend/parser.ts';
 import Environment from './Environment.class.ts';
 import getGlobalScope from './global/index.ts';
-import { evaluate } from './interpreter.ts';
+import { IStack, evaluate } from './interpreter.ts';
 import makeRequire from './require.ts';
-import { defaultStack } from "./values/Runtime.class.ts";
+import Runtime, { defaultStack } from "./values/Runtime.class.ts";
 import AgalArray from './values/complex/Array.class.ts';
 import AgalFunction from './values/complex/Function.class.ts';
 import AgalObject from './values/complex/Object.class.ts';
@@ -46,6 +46,13 @@ export async function agal(code: string, path = 'inicio.agal', stack = defaultSt
 	const data = await evaluate(program, scope, stack)
 	if(data instanceof AgalError) return data;
 	return await (data).get('exporta');
+}
+
+export async function evalLine(line: string, lineIndex: number, scope: Environment = getGlobalScope(), stack: IStack = defaultStack): Promise<[Runtime, Environment, IStack]> {
+	const parser = new Parser();
+	const program = parser.produceAST(line, false, `<linea:${lineIndex}>`);
+	const runtime = await evaluate(program.body, scope, stack);
+	return [runtime, scope, stack];
 }
 
 export default async function AgalEval(code: string) {

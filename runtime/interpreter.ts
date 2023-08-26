@@ -26,6 +26,7 @@ export async function evaluate(astNode: Stmt | Stmt[], env: Environment, Stack: 
     return result ? result : (await import('./values/primitive/Null.class.ts')).AgalVoid
   }
   const stack = {value: astNode, next: Stack};
+  console.log(astNode)
   switch(astNode.kind){
     case 'VarDeclaration': return await declaration.variable(astNode, env, stack);
     case 'FunctionDeclaration': return await declaration._function(astNode, env, stack);
@@ -47,6 +48,8 @@ export async function evaluate(astNode: Stmt | Stmt[], env: Environment, Stack: 
     case 'NumericLiteral': return await literal.number(astNode, env, stack);
     case 'ArrayLiteral': return await literal.array(astNode, env, stack);
     case 'ObjectLiteral': return await literal.object(astNode, env, stack);
+
+    case 'Error': return await literal.error(astNode, env, stack);
   }
   throw new Error(`Cannot evaluate ${astNode.kind}`);
 }

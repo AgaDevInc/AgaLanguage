@@ -6,18 +6,15 @@ import StringGetter from '../primitive/String.class.ts';
 import AgalObject from './Object.class.ts';
 import { IStack, evaluate } from '../../interpreter.ts';
 import Environment from '../../Environment.class.ts';
-import type { ClassDeclaration } from '../../../frontend/ast.ts';
+import { ClassDeclaration, ClassPropertyExtra } from '../../../frontend/ast.ts';
 
 const InstanceDefault = new Runtime() as AgalClass;
 InstanceDefault.makeInstance = () => new Properties(Runtime.loadProperties());
 InstanceDefault.getConstructor = () => Promise.resolve(null);
 
-export const enum MetaClass {
-	STATIC = 'static',
-}
 type PropertiesClass = Record<
 	string,
-	{ meta: MetaClass[]; value: Runtime | Promise<Runtime> }
+	{ meta: ClassPropertyExtra[]; value: Runtime | Promise<Runtime> }
 >;
 
 export default class AgalClass extends Runtime {
@@ -44,7 +41,7 @@ export default class AgalClass extends Runtime {
 			properties = {};
 			for (const method of body)
 				properties[method.identifier] = {
-					meta: [method.extra as MetaClass.STATIC],
+					meta: [method.extra!],
 					value: evaluate(
 						method.value!,
 						extendsFrom as Environment,
@@ -58,7 +55,7 @@ export default class AgalClass extends Runtime {
 		for (const key in properties) {
 			const { meta, value } = (properties as PropertiesClass)[key];
 			const v = Promise.resolve(value)
-			if (meta.includes(MetaClass.STATIC)) v.then((v) => this._set(key, v));
+			if (meta.includes(ClassPropertyExtra.Static)) v.then((v) => this._set(key, v));
 			else v.then((v) => this.#instance.set(key, v));
 		}
 

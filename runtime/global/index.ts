@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import Environment from '../Environment.class.ts';
 import AgalEval from '../eval.ts';
-import { defaultStack } from "../values/Runtime.class.ts";
+import Runtime, { defaultStack } from "../values/Runtime.class.ts";
 import AgalArray from '../values/complex/Array.class.ts';
 import AgalFunction from '../values/complex/Function.class.ts';
 import AgalObject from '../values/complex/Object.class.ts';
@@ -24,15 +24,24 @@ setKeyword('este', global);
 // variables
 setGlobal('global', global, true);
 setGlobal('esteGlobal', global, true);
-const pintar = new AgalFunction(async (_name, _stack, _este, ...args) => {
-	const data = [];
-	for (const arg of args) data.push(await arg.aConsola());
-	console.log(...data);
-	return Promise.resolve(NullClass);
-}).setName('global.pintar', defaultStack)
+
+// deno-lint-ignore require-await
+setGlobal('salir', new AgalFunction(async () => Deno.exit(0)), true);
 setGlobal(
 	'pintar',
-	pintar
+	new AgalFunction(async (_name, _stack, _este, ...args) => {
+		const data = [];
+		for (const arg of args) data.push(await arg.aConsola());
+		console.log(...data);
+		return Promise.resolve(NullClass);
+	})
+);
+setGlobal(
+	'limpiar',
+	new AgalFunction(() => {
+		console.clear()
+		return Promise.resolve(NullClass);
+	})
 );
 setGlobal(
 	'tipoDe',
@@ -47,7 +56,8 @@ setGlobal(
 		if (data instanceof AgalFunction) return new AgalString('función');
 		if (data instanceof AgalArray) return new AgalString('lista');
 		return await new AgalString('desconocido');
-	}).setName('global.tipoDe', defaultStack),
+	}),
+	true,
 	true
 );
 setGlobal(
@@ -57,15 +67,16 @@ setGlobal(
 			return await AgalEval(data.value);
 		}
 		return new AgalTypeError(`Se esperaba una cadena.`,stack).throw();
-	}).setName('global.eval', defaultStack)
+	})
 );
 
 function setGlobal(
 	name: string,
-	value: any,
+	value: Runtime,
 	constant = false,
 	keyword = false
 ) {
+	if(value instanceof AgalFunction) value.setName(`<agal>.${name}`, defaultStack);
 	global.set(name,defaultStack, value);
 	scope.declareVar(name,defaultStack, value, { col: 0, row: 0, constant, keyword });
 }

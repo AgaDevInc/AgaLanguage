@@ -78,7 +78,8 @@ export async function _while(
 				case 'BreakStatement': data = AgalVoid;
 				case 'ContinueStatement': break;
 			}
-			await evaluate(stmt, env, stack);
+			const v = await evaluate(stmt, env, stack);
+			if (v instanceof AgalError && v.throwed) return v;
 		}
 		data = await evaluate(condition, env, stack);
 	}

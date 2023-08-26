@@ -25,6 +25,13 @@ export default class AgalArray extends Runtime{
   async _aConsolaEn(): Promise<string> {
     return await colorize('[Lista]', FOREGROUND.CYAN)
   }
+  get length(): Promise<number>{
+    return new Promise(res=>{
+      (async()=>{
+        res((await this.keys()).map(k => parseInt(k)|0).reduce((a, b) => Math.max(a, b), 0))
+      })()
+    })
+  }
   static from(list: unknown[]){
     const l = new AgalArray();
     for(let i = 0; i < list.length; i++)
@@ -35,7 +42,7 @@ export default class AgalArray extends Runtime{
     return ArrayProperties;
   }
   static async getProperty(name: string,este: Runtime): Promise<Runtime|null> {
-    const maxIndex = (await este.keys()).map(k => parseInt(k)|0).reduce((a, b) => Math.max(a, b), 0);
+    const maxIndex = await (await este.keys()).map(k => parseInt(k)|0).reduce((a, b) => Math.max(a, b), 0)
     if(name === 'largo') return NumberGetter(maxIndex + 1);
     if(name === 'agregar') return await ArrayProperties.set(
 			'agregar',

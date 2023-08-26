@@ -4,7 +4,6 @@ import tokenizer, {
 	skip,
 } from 'https://raw.githubusercontent.com/AdrianCraft07/ts-lib/main/tokenize.fn.ts';
 
-import { ParserError } from '../Errors.ts';
 
 type TokenCallback = Exclude<TokenOptions<TokenType>[0][1], TokenType>;
 
@@ -35,6 +34,7 @@ export const enum TokenType {
 	CloseAngle = 'CloseAngle', // >
 	Backslash = 'Backslash', // \
 	EOF = 'EOF', // End of file
+	Error = 'Error',
 
 	// Keywords
 	Definir = 'Def',
@@ -109,11 +109,11 @@ const toString: TokenCallback = function (quote, { col, row }, line) {
 				const n2 = src.shift();
 				const hex = `${n1}${n2}`;
 				if (!n1 || !n2)
-					new ParserError(
-						line.length - (src.length - 2),
-						row,
-						`Se esperaba un numero hexadecimal`
-					).throw();
+					return [{
+				type: TokenType.Error,
+				value: `Se esperaba un numero hexadecimal`,
+				col,
+				row,}, 2]
 				str += String.fromCharCode(parseInt(hex, 16));
 			} else if (next == 'u') {
 				src.shift();
@@ -123,11 +123,11 @@ const toString: TokenCallback = function (quote, { col, row }, line) {
 				const n4 = src.shift();
 				const hex = `${n1}${n2}${n3}${n4}`;
 				if (!n1 || !n2 || !n3 || !n4)
-					new ParserError(
-						line.length - (src.length - 4),
-						row,
-						`Se esperaba un numero hexadecimal`
-					).throw();
+				return [{
+					type: TokenType.Error,
+					value: `Se esperaba un numero hexadecimal`,
+					col,
+					row,}, 4]
 				str += String.fromCharCode(parseInt(hex, 16));
 			} else if (next == 'U') {
 				src.shift();
@@ -141,11 +141,11 @@ const toString: TokenCallback = function (quote, { col, row }, line) {
 				const n8 = src.shift();
 				const hex = `${n1}${n2}${n3}${n4}${n5}${n6}${n7}${n8}`;
 				if (!n1 || !n2 || !n3 || !n4 || !n5 || !n6 || !n7 || !n8)
-					new ParserError(
-						line.length - (src.length - 8),
-						row,
-						'Se esperaba un numero hexadecimal'
-					).throw();
+					return [{
+						type: TokenType.Error,
+						value: `Se esperaba un numero hexadecimal`,
+						col,
+						row,}, 8]
 				str += String.fromCharCode(parseInt(hex, 16));
 			} else if (next == '\\') str += '\\';
 			else if (next == '"') str += '"';
@@ -192,17 +192,17 @@ export function tokenize(sourceCode: string, file = 'iniciar.agal'): Token[] {
 				let i = col;
 				while (isInt(line[++i] || '')) {
 					if (line[i] == '.' && value.includes('.'))
-						new ParserError(
-							i,
-							row,
-							`Un numero no puede tener mas de dos puntos decimales`
-						).throw();
+					return [{
+						type: TokenType.Error,
+						value: `Un numero no puede tener mas de un punto decimal`,
+						col,
+						row,}, 1];
 					if(line[i] == '.' && (value.includes('π')||value.includes('e')||value.includes('i')))
-						new ParserError(
-							i,
-							row,
-							'Una constante no puede tener un punto decimal'
-						).throw();
+						return [{
+							type: TokenType.Error,
+							value: `Una constante no puede tener un punto decimal`,
+							col,
+							row,}, 1];
 					value += line[i];
 				}
 
@@ -252,6 +252,11 @@ export function tokenize(sourceCode: string, file = 'iniciar.agal'): Token[] {
 		],
 	]) as Token[];
 
+	const error = tokens.find((token) => token.type == TokenType.Error);
+	if (error) {
+		tokens.length = 0;
+		tokens.push(error);
+	}
 	tokens.push({
 		type: TokenType.EOF,
 		value: '',

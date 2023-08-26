@@ -1,8 +1,12 @@
-const { agal } = await import('./runtime/eval.ts');
-const { defaultStack } = await import('./runtime/values/Runtime.class.ts');
-const { AgalReferenceError, default: AgalError } = await import(
-	'./runtime/values/internal/Error.class.ts'
-);
+import Environment from './runtime/Environment.class.ts';
+import getGlobalScope from './runtime/global/index.ts';
+import { IStack } from './runtime/interpreter.ts';
+import {agal, evalLine} from './runtime/eval.ts';
+import { defaultStack } from './runtime/values/Runtime.class.ts';
+import AgalError, {AgalReferenceError} from './runtime/values/internal/Error.class.ts';
+
+const version = '1.0.0';
+const name = 'Agal';
 
 function existFile(path: string): boolean {
 	try {
@@ -12,14 +16,42 @@ function existFile(path: string): boolean {
 	}
 }
 
-const file = `${Deno.cwd()}\\${Deno.args.join(' ')}`.trim();
+const relativeFile = Deno.args.join(' ').trim();
+const file = relativeFile.includes(':') // is absolute path
+	? relativeFile // Absolute path
+	: `${Deno.cwd()}\\${relativeFile}`;
+
+// REPL
+if (!relativeFile) {
+	const { default: InputLoop } = await import(
+		'https://deno.land/x/input@2.0.3/index.ts'
+	);
+	const input = new InputLoop();
+	console.log(`Bienvenido a ${name} v${version}`);
+	console.log('Para salir usa ctrl+c o salir()');
+	let numberLine = 0;
+	let env: Environment = getGlobalScope();
+	let stack: IStack = defaultStack;
+	while (true) {
+		const [runtime, scope, _stack] = await evalLine(
+			(await input.question('>', false)).trim(),
+			++numberLine,
+			env!,
+			stack!
+		);
+		console.log(await runtime.aConsola());
+		env = scope;
+		stack = _stack;
+	}
+}
+
 if (!existFile(file)) {
 	const error = new AgalReferenceError(
 		`No se encontro el archivo '${file}'`,
 		defaultStack
 	).throw();
 	console.error(await error.aConsola());
-	Deno.exit(1);
+	Deno.exit();
 }
 const code = Deno.readTextFileSync(file);
 
@@ -27,5 +59,5 @@ const data = await agal(code, file);
 
 if (data instanceof AgalError) {
 	console.error(await data.aConsola());
-	Deno.exit(1);
+	Deno.exit();
 }

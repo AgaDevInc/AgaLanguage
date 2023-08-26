@@ -25,6 +25,9 @@ export default class Environment {
 		value: RuntimeValue,
 		data: { col: number; row: number; constant?: boolean; keyword?: boolean }
 	): RuntimeValue {
+		if(!name) return new AgalReferenceError(
+			`No se puede declara una variable sin nombre`,stack
+		).throw();
 		if (this.isKeyword(name))
 			return new AgalReferenceError(
 				`Variable '${name}' es una palabra reservada y no puede ser declarara`,stack
@@ -45,6 +48,9 @@ export default class Environment {
 		data: { col: number; row: number }
 	): RuntimeValue {
 		const env = this.resolve(name, data);
+		if(!env.variables.has(name)) return new AgalReferenceError(
+			`Variable '${name}' no ha sido declarada`,stack
+		).throw();
 		if (env.isKeyword(name))
 			return new AgalReferenceError(
 				`Variable '${name}' es una palabra reservada y no puede ser modificada`,stack

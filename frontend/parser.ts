@@ -1,31 +1,33 @@
-// deno-lint-ignore-file no-case-declarations
 import {
-	Stmt,
-	Program,
-	Expr,
-	BinaryExpr,
-	NumericLiteral,
-	VarDeclaration,
-	AssignmentExpr,
-	Property,
-	ObjectLiteral,
-	CallExpr,
-	MemberExpr,
-	ArrayLiteral,
-	IfStatement,
-	ReturnStatement,
-	FunctionDeclaration,
-	ClassDeclaration,
-	ClassProperty,
+	type Stmt,
+	type Program,
+	type Expr,
+	type BinaryExpr,
+	type NumericLiteral,
+	type VarDeclaration,
+	type AssignmentExpr,
+	type Property,
+	type ObjectLiteral,
+	type CallExpr,
+	type MemberExpr,
+	type IfStatement,
+	type ReturnStatement,
+	type FunctionDeclaration,
+	type ClassDeclaration,
+	type ClassProperty,
 	ClassPropertyExtra,
-	WhileStatement,
+	type WhileStatement,
+	LITERALS_TYPE,
+	BLOCK_TYPE,
+	STATEMENTS_TYPE,
+	ErrorType,
+IterableLiteral,
 } from './ast.ts';
 import { tokenize, Token, TokenType } from './lexer.ts';
-import AgaError, { InvalidSyntaxError } from '../Errors.ts';
 import * as ComplexMath from 'aga:ComplexMath';
 
-const zero: NumericLiteral = {
-	kind: 'NumericLiteral',
+export const zero: NumericLiteral = {
+	kind: LITERALS_TYPE.NUMERIC_LITERAL,
 	value: 0,
 	col: 0,
 	row: 0,
@@ -38,22 +40,31 @@ export default class Parser {
 	private tokens: ArrayToken = null as unknown as ArrayToken;
 
 	private not_eof(): boolean {
+		if (this.tokens.length == 0) return false;
 		return this.tokens[0].type != TokenType.EOF;
 	}
 
 	private at(): Token {
-		return this.tokens[0];
+		return (
+			this.tokens[0] ?? {
+				type: TokenType.Error,
+				value: 'No se encontro ningun token.',
+				col: 0,
+				row: 0,
+				file: '',
+			}
+		);
 	}
 
 	private eat(): Token {
-		const prev = this.tokens.shift();
+		const prev = this.at();
+		this.tokens.shift();
 		return prev;
 	}
-	private expect(type: TokenType, err: string): Token {
-		const prev = this.tokens.shift();
-		if (!prev || prev.type != type) {
-			new InvalidSyntaxError(prev?.col ?? 0, prev?.row ?? 0, err).throw();
-		}
+	private expect<T extends TokenType>(type: T, err: string) {
+		const prev = this.tokens.shift() as Token & {type: T}
+		if (!prev || prev.type != type)
+			return { type: TokenType.Error, value: err, col: 0, row: 0, file: '' } as Token & {type: TokenType.Error};
 		return prev;
 	}
 	private sourceCode = '';
@@ -65,18 +76,29 @@ export default class Parser {
 		this.sourceCode = sourceCode;
 		this.tokens = tokenize(sourceCode, file) as ArrayToken;
 		const program: Program = {
-			kind: 'Program',
+			kind: BLOCK_TYPE.PROGRAM,
 			body: [],
 			file: file ?? '',
 			row: 0,
 			col: 0,
 		};
 
+		const functions = [];
+		const code = [];
+
 		// Parse until the end of the file
 		while (this.not_eof()) {
 			const data = this.parse_stmt(isFunction);
-			if (data) program.body.push(data);
+			if (data) {
+				if (data.kind === 'Error') {
+					program.body.push(data);
+					return program;
+				} else if (data.kind === BLOCK_TYPE.FUNCTION_DECLARATION)
+					functions.push(data);
+				else code.push(data);
+			}
 		}
+		program.body = [...functions, ...code];
 
 		return program;
 	}
@@ -86,6 +108,17 @@ export default class Parser {
 		lines[0] = lines[0].slice(aCol - 1);
 		lines[lines.length - 1] = lines[lines.length - 1].slice(0, bCol);
 		return lines.join('\n');
+	}
+
+	private makeError(token: Token, type: ErrorType): Stmt {
+		return {
+			kind: 'Error',
+			col: token.col,
+			row: token.row,
+			file: token.file,
+			message: token.value,
+			type,
+		};
 	}
 
 	private parse_stmt(
@@ -101,6 +134,8 @@ export default class Parser {
 	private parse_stmt(isFunction = false, isLoop = false, isClassDecl = false) {
 		const token = this.at();
 		switch (token.type) {
+			case TokenType.Error:
+				return this.makeError(this.eat(), ErrorType.TokenizerError);
 			case TokenType.Definir:
 			case TokenType.Const:
 				return this.parse_var_decl();
@@ -109,43 +144,50 @@ export default class Parser {
 			case TokenType.Si:
 				return this.parse_if_stmt(isFunction, isLoop);
 			case TokenType.Entonces:
-				new InvalidSyntaxError(
-					token.col,
-					token.row,
-					`No puede usar "${TokenType.Entonces.toLowerCase()}" sin un "${TokenType.Si.toLowerCase()}"`
-				).throw();
-				break;
+				return this.makeError(
+					{
+						...this.eat(),
+						value: `No puede usar "${TokenType.Entonces.toLowerCase()}" sin un "${TokenType.Si.toLowerCase()}"`,
+					},
+					ErrorType.ParserError
+				);
 			case TokenType.Retorna:
 				if (!isFunction)
-					new InvalidSyntaxError(
-						token.col,
-						token.row,
-						`No puedes usar "${TokenType.Retorna.toLowerCase()}" fuera de una función`
-					).throw();
+					return this.makeError(
+						{
+							...this.eat(),
+							value: `No puedes usar "${TokenType.Retorna.toLowerCase()}" fuera de una función`,
+						},
+						ErrorType.ParserError
+					);
 				return this.parse_return_stmt();
 			case TokenType.Mientras:
 				return this.parse_while_stmt();
 			case TokenType.Romper:
-				if (!isLoop)
-					new InvalidSyntaxError(
-						token.col,
-						token.row,
-						`No puedes usar "${TokenType.Romper.toLowerCase()}" fuera de un ciclo`
-					).throw();
 				this.eat();
+				if (!isLoop)
+					return this.makeError(
+						{
+							...token,
+							value: `No puedes usar "${TokenType.Romper.toLowerCase()}" fuera de un ciclo`,
+						},
+						ErrorType.ParserError
+					);
 				return {
 					kind: 'BreakStatement',
 					col: token.col,
 					row: token.row,
 				};
 			case TokenType.Continuar:
-				if (!isLoop)
-					new InvalidSyntaxError(
-						token.col,
-						token.row,
-						`No puede usar "${TokenType.Continuar}" fuera de un ciclo`
-					).throw();
 				this.eat();
+				if (!isLoop)
+					return this.makeError(
+						{
+							...token,
+							value: `No puedes usar "${TokenType.Continuar.toLowerCase()}" fuera de un ciclo`,
+						},
+						ErrorType.ParserError
+					);
 				return {
 					kind: 'ContinueStatement',
 					col: token.col,
@@ -153,49 +195,98 @@ export default class Parser {
 				};
 			case TokenType.Clase:
 				if (isClassDecl)
-					new InvalidSyntaxError(
-						token.col,
-						token.row,
-						'No puedes declarar una clase dentro de otra'
-					).throw();
+					return this.makeError(
+						{
+							...this.eat(),
+							value: `No puedes declarar una clase dentro de otra`,
+						},
+						ErrorType.ParserError
+					);
 				return this.parse_class_decl();
 			case TokenType.Identifier:
 				if (isClassDecl) return this.parse_class_prop();
 				else return this.parse_expr();
 			case TokenType.Estatico:
-				if (!isClassDecl)
-					new InvalidSyntaxError(
-						token.col,
-						token.row,
-						'No puedes declarar una propiedad fuera de una clase'
-					).throw();
 				this.eat();
-				return this.parse_class_prop('static');
+				if (!isClassDecl)
+					return this.makeError(
+						{
+							...token,
+							value: `No puedes usar "${TokenType.Estatico.toLowerCase()}" fuera de una clase`,
+						},
+						ErrorType.ParserError
+					);
+				return this.parse_class_prop(ClassPropertyExtra.Static);
 			case TokenType.Semicolon:
 				this.eat();
 				break;
+			case TokenType.Dot:
+				return this.parse_iterable();
 			default:
 				return this.parse_expr();
 		}
 		return this.parse_expr();
 	}
+	parse_iterable() {
+		// ...value
+		const { col, row, file } = this.eat();
+		let _ = this.expect(
+			TokenType.Dot,
+			`No se encontró el token "${TokenType.Dot.toLowerCase()}"`
+		);
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError);
+		_ = this.expect(
+			TokenType.Dot,
+			`No se encontró el token "${TokenType.Dot.toLowerCase()}"`
+		)
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError);
+		const data = this.expect(
+			TokenType.Identifier,
+			'No se encontro el identificador'
+		);
+		if (data.type === TokenType.Error)
+			return this.makeError(data, ErrorType.ParserError);
+		const name = data.value;
+		const iter: IterableLiteral = {
+			kind: LITERALS_TYPE.ITERABLE_LITERAL,
+			identifier: name,
+			col,
+			row,
+			file,
+		};
+		return iter;
+	}
 	private parse_if_stmt(isFunction = false, isLoop = false): Stmt {
-		const token = this.expect(TokenType.Si, `No se encontró "${TokenType.Si.toLowerCase()}"`);
+		const token = this.expect(
+			TokenType.Si,
+			`No se encontró "${TokenType.Si.toLowerCase()}"`
+		);
+		if (token.type == TokenType.Error)
+			return this.makeError(token, ErrorType.ParserError);
 
-		this.expect(TokenType.OpenParen, 'No se encontró "("');
+		let _: Token = this.expect(TokenType.OpenParen, 'No se encontró "("');
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError);
+
 		const condition = this.parse_expr();
 
-		this.expect(TokenType.CloseParen, 'No se encontró ")"');
-		this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		_ = this.expect(TokenType.CloseParen, 'No se encontró ")"');
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError);
+		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError);
 
 		const ifStmt: IfStatement = {
-			kind: 'IfStatement',
+			kind: BLOCK_TYPE.IF_STATEMENT,
 			condition,
 			body: [] as Stmt[],
 			col: token.col,
 			row: token.row,
 			else: {
-				kind: 'ElseStatement',
+				kind: BLOCK_TYPE.ELSE_STATEMENT,
 				body: [] as Stmt[],
 				col: 0,
 				row: 0,
@@ -207,7 +298,9 @@ export default class Parser {
 		while (this.at().type != TokenType.CloseBrace) {
 			ifStmt.body.push(this.parse_stmt(isFunction, isLoop));
 		}
-		this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError);
 		if (this.at().type == TokenType.Entonces) {
 			const elseToken = this.eat();
 			ifStmt.else.col = elseToken.col;
@@ -217,24 +310,34 @@ export default class Parser {
 			if (this.at().type == TokenType.Si) {
 				ifStmt.else.body.push(this.parse_if_stmt(isFunction, isLoop));
 			} else {
-				this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+				_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+				if (_.type == TokenType.Error)
+					return this.makeError(_, ErrorType.ParserError);
 
 				while (this.at().type != TokenType.CloseBrace)
 					ifStmt.else.body.push(this.parse_stmt(isFunction, isLoop));
 
-				this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+				_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+				if (_.type == TokenType.Error)
+					return this.makeError(_, ErrorType.ParserError);
 			}
 		}
 		return ifStmt;
 	}
 	private parse_return_stmt(): ReturnStatement {
-		const { col, row, file } = this.expect(
+		const _ = this.expect(
 			TokenType.Retorna,
 			`No se encontró la palabra clave "${TokenType.Retorna.toLowerCase()}""`
 		);
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as ReturnStatement;
+		const { col, row, file } = _;
 		const value = this.parse_expr();
 		return {
-			kind: 'ReturnStatement',
+			kind: STATEMENTS_TYPE.RETURN_STATEMENT,
 			value,
 			col,
 			row,
@@ -242,39 +345,72 @@ export default class Parser {
 		};
 	}
 	private parse_func_decl(isVar = false): FunctionDeclaration {
-		const { col, row, file } = this.expect(
+		let _: Token = this.expect(
 			TokenType.Funcion,
 			`No se encontro la palabra clave "${TokenType.Funcion.toLowerCase()}"`
 		);
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as FunctionDeclaration;
+		const { col, row, file } = _;
 
 		const nextToken = this.at();
 		let name = '';
 		if (nextToken.type == TokenType.Identifier) name = this.eat().value;
 		else if (!isVar)
-			new InvalidSyntaxError(
-				nextToken.col,
-				nextToken.row,
-				'No se encontró el identificador'
-			).throw();
+			return this.makeError(
+				{ ...nextToken, value: `No se encontró el identificador` },
+				ErrorType.ParserError
+			) as unknown as FunctionDeclaration;
 
-		this.expect(TokenType.OpenParen, 'No se encontró "("');
+		_ = this.expect(TokenType.OpenParen, 'No se encontró "("');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as FunctionDeclaration;
 		const args: string[] = [];
 		while (this.at().type != TokenType.CloseParen) {
-			args.push(
-				this.expect(TokenType.Identifier, 'No se encontro el identificador')
-					.value
+			const data = this.expect(
+				TokenType.Identifier,
+				'No se encontro el identificador del argumento'
 			);
+			if (data.type == TokenType.Error)
+				return this.makeError(
+					data,
+					ErrorType.ParserError
+				) as unknown as FunctionDeclaration;
+			args.push(data.value);
 			if (this.at().type == TokenType.Comma) this.eat();
 		}
-		this.expect(TokenType.CloseParen, 'No se encontró ")"');
-		this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		_ = this.expect(TokenType.CloseParen, 'No se encontró ")"');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as FunctionDeclaration;
+		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as FunctionDeclaration;
 		const body: Stmt[] = [];
 		while (this.at().type != TokenType.CloseBrace) {
-			body.push(this.parse_stmt(true));
+			const data = this.parse_stmt(true);
+			if (data.kind === 'Error') return data as unknown as FunctionDeclaration;
+			body.push(data);
 		}
 		const endToken = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (endToken.type == TokenType.Error)
+			return this.makeError(
+				endToken,
+				ErrorType.ParserError
+			) as unknown as FunctionDeclaration;
 		return {
-			kind: 'FunctionDeclaration',
+			kind: BLOCK_TYPE.FUNCTION_DECLARATION,
 			identifier: name,
 			params: args,
 			body,
@@ -285,22 +421,45 @@ export default class Parser {
 		};
 	}
 	private parse_class_decl(): ClassDeclaration {
-		const { col, row, file } = this.expect(
+		let _:Token = this.expect(
 			TokenType.Clase,
 			`No se encontró la palabra clave "${TokenType.Clase.toLowerCase()}"`
 		);
-		const name = this.expect(
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as ClassDeclaration;
+		const { col, row, file } = _;
+
+		const data = this.expect(
 			TokenType.Identifier,
 			'No se encontro el identificador'
-		).value;
-		this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		);
+		if (data.type === TokenType.Error)
+			return this.makeError(
+				data,
+				ErrorType.ParserError
+			) as unknown as ClassDeclaration;
+		const name = data.value;
+		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as ClassDeclaration;
 		const body = [];
 		while (this.at().type != TokenType.CloseBrace) {
 			body.push(this.parse_stmt(false, false, true));
 		}
 		const endToken = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (endToken.type == TokenType.Error)
+			return this.makeError(
+				endToken,
+				ErrorType.ParserError
+			) as unknown as ClassDeclaration;
 		return {
-			kind: 'ClassDeclaration',
+			kind: BLOCK_TYPE.CLASS_DECLARATION,
 			identifier: name,
 			body,
 			string: this.getTo(col, row, endToken.col, endToken.row),
@@ -310,32 +469,59 @@ export default class Parser {
 		};
 	}
 	private parse_class_prop(extra?: ClassPropertyExtra): ClassProperty {
-		const name = this.expect(
+		const data = this.expect(
 			TokenType.Identifier,
 			'No se encontro el identificador'
-		).value;
+		);
+		if (data.type === TokenType.Error)
+			return this.makeError(
+				data,
+				ErrorType.ParserError
+			) as unknown as ClassProperty;
+		const name = data.value;
 		const prev = this.eat();
 		if (prev.type === TokenType.OpenParen) {
 			const args: string[] = [];
 			while (this.at().type != TokenType.CloseParen) {
-				args.push(
-					this.expect(TokenType.Identifier, 'No se encontro el identificador')
-						.value
+				const data = this.expect(
+					TokenType.Identifier,
+					'No se encontro el identificador'
 				);
+				if (data.type == TokenType.Error)
+					return this.makeError(
+						data,
+						ErrorType.ParserError
+					) as unknown as ClassProperty;
+				args.push(data.value);
 				if (this.at().type == TokenType.Comma) this.eat();
 			}
-			this.expect(TokenType.CloseParen, 'No se encontró ")"');
-			this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+			let _:Token = this.expect(TokenType.CloseParen, 'No se encontró ")"');
+			if (_.type == TokenType.Error)
+				return this.makeError(
+					_,
+					ErrorType.ParserError
+				) as unknown as ClassProperty;
+			_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+			if (_.type == TokenType.Error)
+				return this.makeError(
+					_,
+					ErrorType.ParserError
+				) as unknown as ClassProperty;
 			const body: Stmt[] = [];
 			while (this.at().type != TokenType.CloseBrace) {
 				body.push(this.parse_stmt(true));
 			}
-			this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+			_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+			if (_.type == TokenType.Error)
+				return this.makeError(
+					_,
+					ErrorType.ParserError
+				) as unknown as ClassProperty;
 			return {
-				kind: 'ClassProperty',
+				kind: LITERALS_TYPE.CLASS_PROPERTY,
 				identifier: name,
 				value: {
-					kind: 'FunctionDeclaration',
+					kind: BLOCK_TYPE.FUNCTION_DECLARATION,
 					identifier: name,
 					params: args,
 					body,
@@ -352,7 +538,7 @@ export default class Parser {
 		if (prev.type === TokenType.Equals) {
 			const value = this.parse_expr();
 			return {
-				kind: 'ClassProperty',
+				kind: LITERALS_TYPE.CLASS_PROPERTY,
 				identifier: name,
 				value,
 				extra,
@@ -361,29 +547,53 @@ export default class Parser {
 				file: prev.file,
 			};
 		}
-		new InvalidSyntaxError(
-			prev.col,
-			prev.row,
-			'No se encontró el valor de la propiedad'
-		).throw();
-		return null as unknown as ClassProperty;
+		return this.makeError(
+			{ ...prev, value: 'No se encontró el valor de la propiedad' },
+			ErrorType.ParserError
+		) as unknown as ClassProperty;
 	}
 	private parse_while_stmt(): WhileStatement {
-		const { col, row, file } = this.expect(
+		let _:Token = this.expect(
 			TokenType.Mientras,
 			`No se encontro la palabra clave "${TokenType.Mientras.toLowerCase()}"`
 		);
-		this.expect(TokenType.OpenParen, 'No se encontró "("');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as WhileStatement;
+		const { col, row, file } = _;
+		_ = this.expect(TokenType.OpenParen, 'No se encontró "("');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as WhileStatement;
 		const condition = this.parse_expr();
-		this.expect(TokenType.CloseParen, 'No se encontró ")"');
-		this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		_ = this.expect(TokenType.CloseParen, 'No se encontró ")"');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as WhileStatement;
+		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as WhileStatement;
 		const body: Stmt[] = [];
 		while (this.at().type != TokenType.CloseBrace) {
 			body.push(this.parse_stmt(false, true));
 		}
-		this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (_.type == TokenType.Error)
+			return this.makeError(
+				_,
+				ErrorType.ParserError
+			) as unknown as WhileStatement;
 		return {
-			kind: 'WhileStatement',
+			kind: BLOCK_TYPE.WHILE_STATEMENT,
 			condition,
 			body,
 			col,
@@ -394,13 +604,19 @@ export default class Parser {
 	private parse_var_decl(): VarDeclaration {
 		const { col, row, file } = this.at();
 		const isConstant = this.eat().type == TokenType.Const;
-		const name = this.expect(
+		const data = this.expect(
 			TokenType.Identifier,
 			'No se encontro el identificador'
-		).value;
+		);
+		if (data.type === TokenType.Error)
+			return this.makeError(
+				data,
+				ErrorType.ParserError
+			) as unknown as VarDeclaration;
+		const name = data.value;
 		if (this.at().type == TokenType.Equals) {
 			return {
-				kind: 'VarDeclaration',
+				kind: STATEMENTS_TYPE.VAR_DECLARATION,
 				constant: isConstant,
 				identifier: name,
 				value: this.parse_expr(),
@@ -410,13 +626,12 @@ export default class Parser {
 			};
 		}
 		if (isConstant)
-			new InvalidSyntaxError(
-				col,
-				row,
-				'Constantes deben tener un valor'
-			).throw();
+			return this.makeError(
+				{ ...this.at(), value: 'Constantes deben tener un valor inical' },
+				ErrorType.ParserError
+			) as unknown as VarDeclaration;
 		return {
-			kind: 'VarDeclaration',
+			kind: STATEMENTS_TYPE.VAR_DECLARATION,
 			constant: isConstant,
 			identifier: name,
 			value: undefined,
@@ -450,7 +665,7 @@ export default class Parser {
 			}
 			if (operator.length >= 2) {
 				// != == !== ===
-				const right = this.parse_object_expr()
+				const right = this.parse_object_expr();
 				return {
 					kind: 'BinaryExpr',
 					left,
@@ -501,13 +716,13 @@ export default class Parser {
 		}
 		if (this.at().type == TokenType.OpenAngle) {
 			this.eat(); // Advance the open angle token
-			return this.parse_assignment_expr('<', left)
+			return this.parse_assignment_expr('<', left);
 		}
 		if (this.at().type == TokenType.CloseAngle) {
 			this.eat(); // Advance the close angle token
-			return this.parse_assignment_expr('>', left)
+			return this.parse_assignment_expr('>', left);
 		}
-		if(operator){
+		if (operator) {
 			return {
 				kind: 'BinaryExpr',
 				left,
@@ -521,46 +736,62 @@ export default class Parser {
 
 		return left;
 	}
-	private parse_object_expr() {
-		if (this.at().type != TokenType.OpenBrace) return this.parse_array_expr();
+	private parse_object_expr(): Expr {
+		if (this.at().type != TokenType.OpenBrace)
+			return this.parse_array_expr() as Expr;
 
 		const { col, row, file } = this.eat(); // Advance the open brace token
 		const properties: Property[] = [];
 
 		while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
-			const {
-				value: key,
-				col,
-				row,
-				file,
-			} = this.expect(
+			let _:Token = this.expect(
 				TokenType.Identifier,
 				'No se puede usar un valor que no sea un identificador como clave de objeto'
 			);
+			if (_.type == TokenType.Error)
+				return this.makeError(_, ErrorType.ParserError) as Expr;
+			const { value: key, col, row, file } = _;
 
 			// Allow shorthand
 			if (this.at().type == TokenType.Comma) {
 				this.eat(); // Advance the colon token
-				properties.push({ key, kind: 'Property', col, row, file });
+				properties.push({ key, kind: LITERALS_TYPE.PROPERTY, col, row, file });
 				continue;
 			} else if (this.at().type == TokenType.CloseBrace) {
-				properties.push({ key, kind: 'Property', col, row, file });
+				properties.push({ key, kind: LITERALS_TYPE.PROPERTY, col, row, file });
 				continue;
 			}
-			this.expect(
+			_ = this.expect(
 				TokenType.Colon,
 				'No se encontró dos puntos en la propiedad del objeto'
 			);
+			if (_.type == TokenType.Error)
+				return this.makeError(_, ErrorType.ParserError) as Expr;
 			const value = this.parse_expr();
-			properties.push({ key, value, kind: 'Property', col, row, file });
+			properties.push({
+				key,
+				value,
+				kind: LITERALS_TYPE.PROPERTY,
+				col,
+				row,
+				file,
+			});
 			if (this.at().type != TokenType.CloseBrace) {
-				this.expect(
+				_ = this.expect(
 					TokenType.Comma,
 					'No se encontró coma en la propiedad del objeto'
 				);
+				if (_.type == TokenType.Error)
+					return this.makeError(_, ErrorType.ParserError) as Expr;
 			}
 		}
-		this.expect(TokenType.CloseBrace, 'No se encontró llave de cierre');
+		const _ = this.expect(
+			TokenType.CloseBrace,
+			'No se encontró llave de cierre'
+		);
+
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError) as Expr;
 		return {
 			kind: 'ObjectLiteral',
 			properties,
@@ -579,14 +810,31 @@ export default class Parser {
 		while (this.not_eof() && this.at().type != TokenType.CloseBracket) {
 			const key = properties.length.toString();
 			const value = this.parse_expr();
-			properties.push({ key, value, kind: 'Property', col, row, file });
+			properties.push({
+				key,
+				value,
+				kind: LITERALS_TYPE.PROPERTY,
+				col,
+				row,
+				file,
+			});
 			if (this.at().type != TokenType.CloseBracket) {
-				this.expect(TokenType.Comma, 'No se encontró coma en la lista');
+				const _ = this.expect(
+					TokenType.Comma,
+					'No se encontró coma en la lista'
+				);
+				if (_.type == TokenType.Error)
+					return this.makeError(_, ErrorType.ParserError) as Expr;
 			}
 		}
 
-		this.expect(TokenType.CloseBracket, 'No se encontró llave de cierre');
-		return { kind: 'ArrayLiteral', properties, col, row, file } as ArrayLiteral;
+		const _ = this.expect(
+			TokenType.CloseBracket,
+			'No se encontró llave de cierre'
+		);
+		if (_.type == TokenType.Error)
+			return this.makeError(_, ErrorType.ParserError) as Expr;
+		return { kind: 'ArrayLiteral', properties, col, row, file };
 	}
 	private parse_additive_expr() {
 		let left = this.parse_multiplicative_expr();
@@ -620,20 +868,29 @@ export default class Parser {
 			if (operator.type == TokenType.Dot) {
 				property = this.parse_primary_expr();
 				computed = false;
-				if (property.kind != 'Identifier')
-					new InvalidSyntaxError(
-						col,
-						row,
-						'No se puede acceder a una propiedad que no sea un identificador'
-					).throw();
-				property.kind = 'PropertyIdentifier';
+				if (property.kind != LITERALS_TYPE.IDENTIFIER)
+					return this.makeError(
+						{
+							...operator,
+							value:
+								'No se puede acceder a una propiedad que no sea un identificador',
+						},
+						ErrorType.ParserError
+					) as unknown as MemberExpr;
+				property.kind =
+					LITERALS_TYPE.PROPERTY_IDENTIFIER as unknown as LITERALS_TYPE.IDENTIFIER;
 			} else {
 				property = this.parse_expr();
 				computed = true;
-				this.expect(
+				const _ = this.expect(
 					TokenType.CloseBracket,
 					'No se encontró corchete de cierre'
 				);
+				if (_.type == TokenType.Error)
+					return this.makeError(
+						_,
+						ErrorType.ParserError
+					) as unknown as MemberExpr;
 			}
 			object = {
 				kind: 'MemberExpr',
@@ -655,10 +912,20 @@ export default class Parser {
 		return args;
 	}
 	private parse_args(): Expr[] {
-		this.expect(TokenType.OpenParen, 'No se encontró paréntesis de apertura');
+		let _:Token = this.expect(
+			TokenType.OpenParen,
+			'No se encontró paréntesis de apertura'
+		);
+		if (_.type == TokenType.Error)
+			return [this.makeError(_, ErrorType.ParserError)] as Expr[];
 		const args =
 			this.at().type == TokenType.CloseParen ? [] : this.parse_arguments_list();
-		this.expect(TokenType.CloseParen, 'No se encontró paréntesis de cierre');
+		_ = this.expect(
+			TokenType.CloseParen,
+			'No se encontró paréntesis de cierre'
+		);
+		if (_.type == TokenType.Error)
+			return [this.makeError(_, ErrorType.ParserError)] as Expr[];
 		return args;
 	}
 	private parse_call_expr(callee: Expr): Expr {
@@ -725,39 +992,41 @@ export default class Parser {
 		switch (tk.type) {
 			case TokenType.Identifier:
 				return {
-					kind: 'Identifier',
+					kind: LITERALS_TYPE.IDENTIFIER,
 					symbol: this.eat().value,
 					col: tk.col,
 					row: tk.row,
 					file: tk.file,
 				};
-			case TokenType.Number:
+			case TokenType.Number:{
 				const value_ = ComplexMath.eval_complex(this.eat().value, {});
 				type Item<A> = A extends (infer I)[] ? I : A;
 				return {
-					kind: 'NumericLiteral',
+					kind: LITERALS_TYPE.NUMERIC_LITERAL,
 					value: value_ as Item<typeof value_>,
 					col: tk.col,
 					row: tk.row,
 					file: tk.file,
-				};
+				};}
 			case TokenType.String:
 				return {
-					kind: 'StringLiteral',
+					kind: LITERALS_TYPE.STRING_LITERAL,
 					value: this.eat().value,
 					col: tk.col,
 					row: tk.row,
 					file: tk.file,
 				};
 
-			case TokenType.OpenParen:
+			case TokenType.OpenParen:{
 				this.eat(); // Eat the open paren
 				const value = this.parse_expr();
-				this.expect(
+				const _ = this.expect(
 					TokenType.CloseParen,
 					'No se encontró el paréntesis de cierre'
 				); // Eat the close paren
-				return value;
+				if (_.type == TokenType.Error)
+					return this.makeError(_, ErrorType.ParserError) as Expr;
+				return value;}
 			case TokenType.Funcion:
 				return this.parse_func_decl() as unknown as Expr;
 			case TokenType.Mientras:
@@ -776,13 +1045,15 @@ export default class Parser {
 					} as BinaryExpr;
 				}
 				break;
+			case TokenType.Error:
+				return this.makeError(
+					this.eat(),
+					ErrorType.TokenizerError
+				) as unknown as Expr;
 		}
-		new AgaError(
-			'InvalidTokenError',
-			tk.col,
-			tk.row,
-			`Un token inesperado "${tk.value}"`
-		);
-		return null as unknown as Expr;
+		return this.makeError(
+			{ ...tk, value: `Un token inesperado "${tk.type}"` },
+			ErrorType.TokenizerError
+		) as unknown as Expr;
 	}
 }

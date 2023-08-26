@@ -2,112 +2,44 @@
   "kind": "Program",
   "body": [
     {
-      "kind": "VarDeclaration",
-      "constant": false,
-      "identifier": "i",
-      "value": {
-        "kind": "AssignmentExpr",
-        "assignee": null,
-        "value": {
-          "kind": "NumericLiteral",
-          "value": "0",
-          "col": 9,
-          "row": 1,
-          "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-        },
-        "col": 7,
-        "row": 1,
-        "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-      },
-      "col": 1,
-      "row": 1,
-      "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-    },
-    {
-      "kind": "WhileStatement",
-      "condition": {
-        "kind": "BinaryExpr",
-        "left": {
+      "kind": "AssignmentExpr",
+      "assignee": {
+        "kind": "MemberExpr",
+        "object": {
           "kind": "Identifier",
-          "symbol": "i",
-          "col": 6,
-          "row": 2,
-          "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
+          "symbol": "modulo",
+          "col": 1,
+          "row": 1,
+          "file": "input"
         },
-        "operator": "<=",
-        "right": {
-          "kind": "NumericLiteral",
-          "value": "5",
-          "col": 9,
-          "row": 2,
-          "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
+        "property": {
+          "kind": "PropertyIdentifier",
+          "symbol": "exporta",
+          "col": 8,
+          "row": 1,
+          "file": "input"
         },
-        "col": 8,
-        "row": 2,
-        "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
+        "computed": false,
+        "col": 1,
+        "row": 1,
+        "file": "input"
       },
-      "body": [
-        {
-          "kind": "AssignmentExpr",
-          "assignee": {
-            "kind": "Identifier",
-            "symbol": "i",
-            "col": 3,
-            "row": 3,
-            "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-          },
-          "value": {
-            "kind": "BinaryExpr",
-            "left": {
-              "kind": "Identifier",
-              "symbol": "i",
-              "col": 7,
-              "row": 3,
-              "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-            },
-            "right": {
-              "kind": "NumericLiteral",
-              "value": "1",
-              "col": 11,
-              "row": 3,
-              "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-            },
-            "operator": "+",
-            "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-          },
-          "col": 5,
-          "row": 3,
-          "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-        },
-        {
-          "kind": "CallExpr",
-          "callee": {
-            "kind": "Identifier",
-            "symbol": "pintar",
-            "col": 3,
-            "row": 4,
-            "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-          },
-          "args": [
-            {
-              "kind": "Identifier",
-              "symbol": "i",
-              "col": 10,
-              "row": 4,
-              "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-            }
-          ],
-          "col": 3,
-          "row": 4,
-          "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
-        }
-      ],
-      "col": 1,
-      "row": 2,
-      "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal"
+      "value": {
+        "kind": "FunctionDeclaration",
+        "identifier": "a",
+        "params": [],
+        "body": [],
+        "string": "fn a(){}",
+        "col": 18,
+        "row": 1,
+        "file": "input"
+      },
+      "col": 16,
+      "row": 1,
+      "file": "input"
     }
   ],
-  "file": "D:/GitHub/AgaDev/AgaLanguage/iniciar.agal",
+  "file": "input",
   "row": 0,
   "col": 0
 }

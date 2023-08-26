@@ -1,5 +1,5 @@
 import { colorize, FOREGROUND } from 'aga:Colors';
-import type { FunctionDeclaration } from '../../../frontend/ast.ts';
+import { BLOCK_TYPE, type FunctionDeclaration } from '../../../frontend/ast.ts';
 import Environment from '../../Environment.class.ts';
 import Runtime, { defaultStack } from '../Runtime.class.ts';
 import { AgalReferenceError } from '../internal/Error.class.ts';
@@ -13,7 +13,7 @@ const defaultDeclaration: FunctionDeclaration = {
 	row: 0,
 	body: [],
 	identifier: '',
-	kind: 'FunctionDeclaration',
+	kind: BLOCK_TYPE.FUNCTION_DECLARATION,
 	params: [],
 	string: '',
 	file: '',
@@ -74,14 +74,14 @@ export default class AgalFunction extends Runtime {
 	}
 	async _aConsola(): Promise<string> {
 		const name = await this.get('nombre');
-		return colorize(`[Funcion ${name}]`, FOREGROUND.CYAN);
+		return colorize(`[Función ${name || "<anónima>"}]`, FOREGROUND.CYAN);
 	}
 	setName(name: string, stack: IStack) {
 		this.name = name || this.name;
 		this.set('nombre', stack, StringGetter(this.name));
 		return this;
 	}
-	static getProperties(): Properties {
+	static loadProperties(): Properties {
 		if (!use) {
 			use = true;
 			AgalFunction.default = AgalFunction.from(() => Promise.resolve(AgalVoid));
@@ -101,8 +101,8 @@ export default class AgalFunction extends Runtime {
 							defaultStack
 						).throw();
 					return await _este.call(name, stack, este, ...args);
-				})
-			);
+				}).setName('Funcion().ejecutar', defaultStack)
+			)
 		}
 		return fnProperties;
 	}

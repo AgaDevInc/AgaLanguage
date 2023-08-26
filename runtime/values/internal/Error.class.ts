@@ -65,8 +65,8 @@ function parseStmt(stmt: Stmt): string {
 			return `Cadena '${stmt.value}' en ${location}`;
 		case 'VarDeclaration':
 			return `Declaracion de variable '${stmt.identifier}' en ${location}`;
-		case 'Program':
-			return `En ${location}`;
+		default:
+			return '';
 	}
 }
 function parseStack(stack: IStack) {
@@ -76,8 +76,8 @@ function parseStack(stack: IStack) {
 		stack = stack.next;
 		data.push(stack.value ? parseStmt(stack.value) : '');
 	}
-	return data
-		.filter((item, index) => data && data.indexOf(item) === index)
+	return '\n'+data
+		.filter((item, index) => item && data.indexOf(item) === index)
 		.join('\n');
 }
 
@@ -114,7 +114,7 @@ export default class AgalError extends Runtime {
 	}
 	async _aConsola(): Promise<string> {
 		const data = await this._aConsolaEn();
-		return `${data}\n  ${this.pila.replaceAll('\n', '\n  ')}`;
+		return `${data}${this.pila.replaceAll('\n', '\n  ')}`;
 	}
 	async _aConsolaEn(): Promise<string> {
 		const nombreRuntime = await this.get('nombre');
@@ -139,5 +139,15 @@ export class AgalTypeError extends AgalError {
 export class AgalReferenceError extends AgalError {
 	constructor(message: string, stack: IStack) {
 		super('ErrorReferencia', message, stack);
+	}
+}
+export class AgalSyntaxError extends AgalError {
+	constructor(message: string, stack: IStack) {
+		super('ErrorSintaxis', message, stack);
+	}
+}
+export class AgalTokenizeError extends AgalError{
+	constructor(message: string, stack: IStack) {
+		super('ErrorTokenizar', message, stack);
 	}
 }
