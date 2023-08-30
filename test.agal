@@ -1,3 +1,8 @@
-modulo.exporta = fn x(a){
-  pintar(a.aCadena(), a.aConsola(), a.aConsolaEn())
-};
+pintar('inicio')
+intentar{
+  def a = analizar('e^πi')
+  pintar(a)
+} capturar(error){
+  pintar(error.aConsolaEn())
+}
+pintar('fin')

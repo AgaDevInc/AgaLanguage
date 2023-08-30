@@ -41,7 +41,6 @@ export async function agal(code: string, path = 'inicio.agal', stack = defaultSt
 	path = path.replace(/\\/g, '/');
 	const parser = new Parser();
 	const program = parser.produceAST(code, false, path);
-	Deno.writeTextFileSync('ast.json', JSON.stringify(program, null, 2));
 	const scope = await getModuleScope(path);
 	const data = await evaluate(program, scope, stack)
 	if(data instanceof AgalError) return data;

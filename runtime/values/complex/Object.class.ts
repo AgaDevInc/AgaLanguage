@@ -2,13 +2,16 @@ import { colorize, FOREGROUND } from "aga:Colors";
 import parseRuntime from "../parse.ts";
 import Runtime, { defaultStack } from "../Runtime.class.ts";
 import type { IStack } from "../../interpreter.ts";
+import Properties from "../internal/Properties.class.ts";
 
+const props = new Properties(Runtime.loadProperties());
 export default class AgalObject extends Runtime{
   static from(obj: Record<string, unknown>, stack:IStack){
     const o = new AgalObject();
     Object.keys(obj).forEach(key => {
       o.set(key, stack, parseRuntime(defaultStack, obj[key]));
     })
+    return o;
   }
   async _aConsola(): Promise<string> {
     const obj = {} as Record<string, unknown>;
@@ -23,5 +26,8 @@ export default class AgalObject extends Runtime{
   }
   _aConsolaEn(): Promise<string> {
     return Promise.resolve(colorize('[Objeto]', FOREGROUND.CYAN))
+  }
+  static loadProperties(): Properties {
+    return props;
   }
 }

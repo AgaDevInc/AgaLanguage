@@ -8,6 +8,7 @@ export default function tipoDe(value: AgalBoolean): "buleano";
 export default function tipoDe(value: AgalNull): "nulo";
 export default function tipoDe(value: AgalNumber): "numero";
 export default function tipoDe(value: AgalString): "cadena";
+export default function tipoDe(value: Primitive): "indefinido";
 export default function tipoDe(value: Primitive){
   if(value instanceof AgalBoolean) return "buleano";
   if(value instanceof AgalNull) return "nulo";

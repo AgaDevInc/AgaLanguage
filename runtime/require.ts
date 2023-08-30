@@ -1,7 +1,7 @@
 import { agal } from './eval.ts';
 import type { IStack } from "./interpreter.ts";
 import type Runtime from './values/Runtime.class.ts';
-import type AgalObject from './values/complex/Object.class.ts';
+import AgalObject from './values/complex/Object.class.ts';
 import { AgalReferenceError } from './values/internal/Error.class.ts';
 
 const cache = new Map();
@@ -34,5 +34,8 @@ export default async function makeRequire(
 		).throw();
 	const code = await agal(file, path, stack);
 	cache.set(path, code);
+	const hijos = await modulo.get('hijos')
+	const hijos_agregar = await hijos.get('agregar')
+	await hijos_agregar.call('agregar', stack, hijos, AgalObject.from({nombre:pathFile, ruta:path}, stack));
 	return code;
 }

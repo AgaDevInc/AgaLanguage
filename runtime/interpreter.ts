@@ -25,17 +25,19 @@ export async function evaluate(astNode: Stmt | Stmt[], env: Environment, Stack: 
     }
     return result ? result : (await import('./values/primitive/Null.class.ts')).AgalVoid
   }
-  const stack = {value: astNode, next: Stack};
+  const stack = astNode === Stack.value ? Stack : {value: astNode, next: Stack};
   switch(astNode.kind){
     case 'VarDeclaration': return await declaration.variable(astNode, env, stack);
     case 'FunctionDeclaration': return await declaration._function(astNode, env, stack);
     case 'ClassDeclaration': return await declaration._class(astNode, env, stack);
+    case 'ClassProperty': return await declaration.classProperty(astNode, env, stack);
 
     case 'Program': return await statement.program(astNode, env, stack);
     case 'ReturnStatement': return await statement._return(astNode, env, stack);
     case 'IfStatement': return await statement._if(astNode, env, stack);
     case 'ElseStatement': return await statement._else(astNode, env, stack);
     case 'WhileStatement': return await statement._while(astNode, env, stack);
+    case 'TryCatch': return await statement.try_catch(astNode, env, stack);
 
     case 'AssignmentExpr': return await expressions.assignment(astNode, env, stack);
     case 'MemberExpr': return await expressions.member(astNode, env, stack);

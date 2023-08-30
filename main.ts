@@ -1,10 +1,8 @@
 import Environment from './runtime/Environment.class.ts';
-import getGlobalScope from './runtime/global/index.ts';
 import { IStack } from './runtime/interpreter.ts';
-import {agal, evalLine} from './runtime/eval.ts';
+import { agal, evalLine, getModuleScope } from './runtime/eval.ts';
 import { defaultStack } from './runtime/values/Runtime.class.ts';
-import AgalError, {AgalReferenceError} from './runtime/values/internal/Error.class.ts';
-
+import AgalError, { AgalReferenceError } from './runtime/values/internal/Error.class.ts';
 const version = '1.0.0';
 const name = 'Agal';
 
@@ -23,14 +21,12 @@ const file = relativeFile.includes(':') // is absolute path
 
 // REPL
 if (!relativeFile) {
-	const { default: InputLoop } = await import(
-		'https://deno.land/x/input@2.0.3/index.ts'
-	);
+	const { default: InputLoop } = await import('https://deno.land/x/input@2.0.3/index.ts');
 	const input = new InputLoop();
 	console.log(`Bienvenido a ${name} v${version}`);
 	console.log('Para salir usa ctrl+c o salir()');
 	let numberLine = 0;
-	let env: Environment = getGlobalScope();
+	let env: Environment = await getModuleScope(file);
 	let stack: IStack = defaultStack;
 	while (true) {
 		const [runtime, scope, _stack] = await evalLine(
@@ -46,10 +42,7 @@ if (!relativeFile) {
 }
 
 if (!existFile(file)) {
-	const error = new AgalReferenceError(
-		`No se encontro el archivo '${file}'`,
-		defaultStack
-	).throw();
+	const error = new AgalReferenceError(`No se encontro el archivo '${file}'`, defaultStack).throw();
 	console.error(await error.aConsola());
 	Deno.exit();
 }

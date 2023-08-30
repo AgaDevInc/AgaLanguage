@@ -1,4 +1,4 @@
-import { LikeNumber } from 'aga:ComplexMath/types';
+import type { LikeNumber } from 'aga:ComplexMath/types';
 
 export const enum BLOCK_TYPE {
 	FUNCTION_DECLARATION = 'FunctionDeclaration',
@@ -7,6 +7,7 @@ export const enum BLOCK_TYPE {
 	WHILE_STATEMENT = 'WhileStatement',
 	CLASS_DECLARATION = 'ClassDeclaration',
 	PROGRAM = 'Program',
+	TRY_CATCH = 'TryCatch',
 }
 export const enum STATEMENTS_TYPE {
 	VAR_DECLARATION = 'VarDeclaration',
@@ -20,6 +21,7 @@ export const enum EXPRESSIONS_TYPE {
 	MEMBER_EXPR = 'MemberExpr',
 	BINARY_EXPR = 'BinaryExpr',
 	CALL_EXPR = 'CallExpr',
+	UNARY_EXPR = 'UnaryExpr',
 }
 
 export const enum LITERALS_TYPE {
@@ -32,6 +34,7 @@ export const enum LITERALS_TYPE {
 	IDENTIFIER = 'Identifier',
 	PROPERTY_IDENTIFIER = 'PropertyIdentifier',
 	CLASS_PROPERTY = 'ClassProperty',
+	PROPERTY_COMPUTED = 'PropertyComputed',
 }
 
 export type NodeType =
@@ -106,13 +109,20 @@ export type BlockStatement =
 	| FunctionDeclaration
 	| WhileStatement
 	| IfStatement
-	| ElseStatement;
+	| ElseStatement
+	| TryCatchStatement;
 
+export interface TryCatchStatement extends IBlockStatement {
+	kind: BLOCK_TYPE.TRY_CATCH;
+	catchBody: Stmt[];
+	errorName: string;
+}
 export interface ClassDeclaration extends IBlockStatement {
 	kind: BLOCK_TYPE.CLASS_DECLARATION;
 	identifier: string;
 	body: ClassProperty[];
 	string: string;
+	extend?: string;
 }
 export interface Program extends IStmt {
 	kind: BLOCK_TYPE.PROGRAM;
@@ -121,7 +131,7 @@ export interface Program extends IStmt {
 export interface FunctionDeclaration extends IBlockStatement {
 	kind: BLOCK_TYPE.FUNCTION_DECLARATION;
 	identifier: string;
-	params: string[];
+	params: (string| IterableLiteral)[];
 	string: string;
 }
 export interface WhileStatement extends IBlockStatement {
@@ -144,6 +154,7 @@ interface IExpr extends IStmt {
 export type Expr =
 	| AssignmentExpr
 	| BinaryExpr
+	| UnaryExpr
 	| CallExpr
 	| MemberExpr
 	| Identifier
@@ -171,6 +182,11 @@ export interface BinaryExpr extends IExpr {
 	kind: EXPRESSIONS_TYPE.BINARY_EXPR;
 	left: Expr;
 	right: Expr;
+	operator: string;
+}
+export interface UnaryExpr extends IExpr {
+	kind: EXPRESSIONS_TYPE.UNARY_EXPR;
+	value: Expr;
 	operator: string;
 }
 export interface CallExpr extends IExpr {
@@ -209,11 +225,16 @@ export interface Property extends IExpr {
 	key: string;
 	value?: Expr;
 }
+export interface PropertyComputed extends IExpr {
+	kind: LITERALS_TYPE.PROPERTY_COMPUTED;
+	key: Expr;
+	value: Expr;
+}
 export interface ObjectLiteral extends IExpr {
 	kind: LITERALS_TYPE.OBJECT_LITERAL;
-	properties: Property[];
+	properties: (Property|IterableLiteral|PropertyComputed)[];
 }
 export interface ArrayLiteral extends IExpr {
 	kind: LITERALS_TYPE.ARRAY_LITERAL;
-	properties: Property[];
+	properties: (Property|IterableLiteral)[];
 }

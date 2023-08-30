@@ -4,11 +4,13 @@ import StringGetter from '../primitive/String.class.ts';
 import type { Expr, Stmt } from '../../../frontend/ast.ts';
 import { IStack } from '../../interpreter.ts';
 import { AgalNull } from '../primitive/Null.class.ts';
+import Properties from './Properties.class.ts';
 
 function resolveName(expr: Expr): string {
 	if (!expr) return '';
 	switch (expr.kind) {
 		case 'Identifier':
+		case 'PropertyIdentifier':
 			return expr.symbol;
 		case 'MemberExpr':
 			return `${resolveName(expr.object)}.${resolveName(expr.property)}`;
@@ -65,8 +67,10 @@ function parseStmt(stmt: Stmt): string {
 			return `Cadena '${stmt.value}' en ${location}`;
 		case 'VarDeclaration':
 			return `Declaracion de variable '${stmt.identifier}' en ${location}`;
+		case 'TryCatch':
+			return `Intentar en ${location}`;
 		default:
-			return '';
+			return `En ${location}`;
 	}
 }
 function parseStack(stack: IStack) {
@@ -76,11 +80,10 @@ function parseStack(stack: IStack) {
 		stack = stack.next;
 		data.push(stack.value ? parseStmt(stack.value) : '');
 	}
-	return '\n'+data
-		.filter((item, index) => item && data.indexOf(item) === index)
-		.join('\n');
+	return '\n' + data.filter((item, index) => item && data.indexOf(item) === index).join('\n');
 }
 
+const props = new Properties(Runtime.loadProperties());
 export default class AgalError extends Runtime {
 	throwed = false;
 	private pila: string;
@@ -102,14 +105,9 @@ export default class AgalError extends Runtime {
 	async _aCadena(): Promise<string> {
 		const nombreRuntime = await this.get('nombre');
 		const mensajeRuntime = await this.get('mensaje');
-		const nombre =
-			nombreRuntime instanceof AgalNull
-				? this.name
-				: await nombreRuntime.aCadena();
+		const nombre = nombreRuntime instanceof AgalNull ? this.name : await nombreRuntime.aCadena();
 		const mensaje =
-			mensajeRuntime instanceof AgalNull
-				? this.message
-				: await mensajeRuntime.aCadena();
+			mensajeRuntime instanceof AgalNull ? this.message : await mensajeRuntime.aCadena();
 		return `${nombre}: ${mensaje}`;
 	}
 	async _aConsola(): Promise<string> {
@@ -119,35 +117,49 @@ export default class AgalError extends Runtime {
 	async _aConsolaEn(): Promise<string> {
 		const nombreRuntime = await this.get('nombre');
 		const mensajeRuntime = await this.get('mensaje');
-		const nombre =
-			nombreRuntime instanceof AgalNull
-				? this.name
-				: await nombreRuntime.aCadena();
+		const nombre = nombreRuntime instanceof AgalNull ? this.name : await nombreRuntime.aCadena();
 		const mensaje =
-			mensajeRuntime instanceof AgalNull
-				? this.message
-				: await mensajeRuntime.aCadena();
+			mensajeRuntime instanceof AgalNull ? this.message : await mensajeRuntime.aCadena();
 		return `${colorize(nombre, FOREGROUND.RED)}: ${mensaje}`;
+	}
+	static loadProperties(): Properties {
+		return props;
 	}
 }
 
+const propsType = new Properties(AgalError.loadProperties());
 export class AgalTypeError extends AgalError {
 	constructor(message: string, stack: IStack) {
 		super('ErrorTipo', message, stack);
 	}
+	static loadProperties(): Properties {
+		return propsType;
+	}
 }
+const propsRef = new Properties(AgalError.loadProperties());
 export class AgalReferenceError extends AgalError {
 	constructor(message: string, stack: IStack) {
 		super('ErrorReferencia', message, stack);
 	}
+	static loadProperties(): Properties {
+		return propsRef;
+	}
 }
+const propsSyn = new Properties(AgalError.loadProperties());
 export class AgalSyntaxError extends AgalError {
 	constructor(message: string, stack: IStack) {
 		super('ErrorSintaxis', message, stack);
 	}
+	static loadProperties(): Properties {
+		return propsSyn;
+	}
 }
-export class AgalTokenizeError extends AgalError{
+const propsToken = new Properties(AgalError.loadProperties());
+export class AgalTokenizeError extends AgalError {
 	constructor(message: string, stack: IStack) {
 		super('ErrorTokenizar', message, stack);
+	}
+	static loadProperties(): Properties {
+		return propsToken;
 	}
 }

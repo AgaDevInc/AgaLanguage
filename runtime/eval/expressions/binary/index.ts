@@ -3,7 +3,6 @@ import type Environment from "../../../Environment.class.ts";
 import { type IStack, evaluate } from "../../../interpreter.ts";
 import AgalError from "../../../values/internal/Error.class.ts";
 import { AgalNumber } from "../../../values/primitive/Number.class.ts";
-import Primitive from "../../../values/primitive/Primitive.class.ts";
 import { AgalString } from "../../../values/primitive/String.class.ts";
 import binary_numeric from "./number.ts";
 import binary_string from "./string.ts";
@@ -17,8 +16,8 @@ export default async function binary(bin: BinaryExpr, env: Environment,stack:ISt
 
 	if (leftVal instanceof AgalNumber && rightVal instanceof AgalNumber)
 		return binary_numeric(stack,leftVal.value, operator, rightVal.value);
-  if(leftVal instanceof AgalString && rightVal instanceof Primitive)
-    return binary_string(stack,leftVal.value, operator, rightVal.value);
+  if(leftVal instanceof AgalString || rightVal instanceof AgalString)
+    return binary_string(stack,await leftVal.aCadena(), operator, await rightVal.aCadena());
 	if (operator == '==') return leftVal == rightVal;
 	if (operator == '!=') return leftVal != rightVal;
 }

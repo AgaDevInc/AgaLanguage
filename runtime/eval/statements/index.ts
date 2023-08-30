@@ -3,9 +3,10 @@ import type {
 	IfStatement,
 	Program,
 	ReturnStatement,
+	TryCatchStatement,
 	WhileStatement,
 } from '../../../frontend/ast.ts';
-import type Environment from '../../Environment.class.ts';
+import Environment from '../../Environment.class.ts';
 import { type IStack, evaluate } from '../../interpreter.ts';
 import type Runtime from '../../values/Runtime.class.ts';
 import AgalError from '../../values/internal/Error.class.ts';
@@ -82,6 +83,22 @@ export async function _while(
 			if (v instanceof AgalError && v.throwed) return v;
 		}
 		data = await evaluate(condition, env, stack);
+	}
+	return data;
+}
+
+export async function try_catch(
+	trycatch: TryCatchStatement,
+	env: Environment,
+	stack: IStack
+) {
+	const { body: tryBody, catchBody, errorName } = trycatch;
+	let data = await evaluate(tryBody, new Environment(env), stack)
+	if (data instanceof AgalError && data.throwed) {
+		const catchEnv = new Environment(env);
+		data.throwed = false;
+		catchEnv.declareVar(errorName, stack, data, trycatch);
+		data = await evaluate(catchBody, catchEnv, stack);
 	}
 	return data;
 }

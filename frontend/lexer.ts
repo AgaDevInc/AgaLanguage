@@ -48,6 +48,9 @@ export const enum TokenType {
 	Continuar = 'Cont',
 	Clase = 'Clase',
 	Estatico = 'Est',
+	Extiende = 'Extiende',
+	Intentar = 'Intentar',
+	Capturar = 'Capturar',
 }
 export type Token = PreToken<TokenType> & {file:string};
 
@@ -64,6 +67,9 @@ const KEYWORDS: Record<string, TokenType> = {
 	cont: TokenType.Continuar,
 	clase: TokenType.Clase,
 	est: TokenType.Estatico,
+	extiende: TokenType.Extiende,
+	intentar: TokenType.Intentar,
+	capturar: TokenType.Capturar,
 };
 
 // Validate that the character is a letter
@@ -228,7 +234,7 @@ export function tokenize(sourceCode: string, file = 'iniciar.agal'): Token[] {
 
 				const reserved = KEYWORDS[value];
 
-				if (reserved)
+				if (typeof reserved === 'string')
 					return [
 						{
 							type: reserved,

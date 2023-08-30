@@ -14,6 +14,17 @@ export class AgalString extends Primitive {
 	public toString() {
 		return this.value;
 	}
+	protected _aBuleano(): Promise<boolean> {
+		return Promise.resolve(this.value.length > 0);
+	}
+	protected _aNumero() {
+		return Promise.resolve(this.value.length);
+	}
+	protected _aIterable(): Promise<Runtime[]> {
+		return Promise.resolve(
+			this.value.split('').map((char) => StringGetter(char))
+		);
+	}
 	_aConsola(): Promise<string> {
 		return Promise.resolve(this.value);
 	}

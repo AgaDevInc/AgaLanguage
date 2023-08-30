@@ -1,9 +1,10 @@
 // deno-lint-ignore-file require-await
-import type { VarDeclaration,FunctionDeclaration,ClassDeclaration } from "../../frontend/ast.ts";
+import { type VarDeclaration,type FunctionDeclaration,type ClassDeclaration, type ClassProperty } from "../../frontend/ast.ts";
 import type Environment from "../Environment.class.ts";
 import { IStack, evaluate } from "../interpreter.ts";
 import AgalClass from "../values/complex/Class.class.ts";
 import AgalFunction from "../values/complex/Function.class.ts";
+import AgalError from "../values/internal/Error.class.ts";
 import parseRuntime from "../values/parse.ts";
 
 export async function variable(
@@ -33,12 +34,19 @@ export async function _function(
 ) {
 	const { identifier, col, row } = funcDecl;
 	const func = new AgalFunction(identifier, funcDecl, env);
-	return env.declareVar(identifier, stack, func, { col, row, constant: true });
+	return identifier ? env.declareVar(identifier, stack, func, { col, row, constant: true }):func
 }
 export async function _class(classDecl: ClassDeclaration, env:Environment, stack:IStack) {
 	const { identifier, col, row } = classDecl;
 
-	const func = new AgalClass(identifier, classDecl, env);
+	const func = await AgalClass.from(classDecl, env);
+	if(func instanceof AgalError) return func;
 	return env.declareVar(identifier, stack, func, { col, row, constant: true });
 }
-
+export function classProperty(
+	classprp: ClassProperty,
+	env: Environment,
+	stack: IStack
+) {
+	return evaluate(classprp.value!, env, stack)
+}
