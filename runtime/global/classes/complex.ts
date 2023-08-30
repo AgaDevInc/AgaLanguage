@@ -22,8 +22,8 @@ export default function (
 	const Lista = new AgalClass('Lista', {
 		constructor: {
 			meta: Static,
-			value:AgalFunction.from(function (_name, _stack, _este, ...args) {
-				return Promise.resolve(AgalArray.from(args));
+			value:AgalFunction.from(function (_name, _stack, _este,) {
+				return Promise.resolve(new AgalArray());
 			}).setName('Lista', defaultStack),
 		},
 		de: {

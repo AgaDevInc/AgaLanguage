@@ -15,7 +15,8 @@ export interface IStack{
 }
 
 export async function evaluate(astNode: Stmt | Stmt[], env: Environment, Stack: IStack): Promise<IRuntimeValue>{
-  if(!astNode) return (await import('./values/primitive/Null.class.ts')).default;
+  const {default:Null,AgalVoid} = (await import('./values/primitive/Null.class.ts'));
+  if(!astNode) return Null;
   if(Array.isArray(astNode)){
     let result: IRuntimeValue | null = null;
     for(const node of astNode){
@@ -23,7 +24,7 @@ export async function evaluate(astNode: Stmt | Stmt[], env: Environment, Stack: 
       if(node.kind === "ReturnStatement") return result;
       if(result instanceof AgalError) return result
     }
-    return result ? result : (await import('./values/primitive/Null.class.ts')).AgalVoid
+    return result ? result : AgalVoid
   }
   const stack = astNode === Stack.value ? Stack : {value: astNode, next: Stack};
   switch(astNode.kind){

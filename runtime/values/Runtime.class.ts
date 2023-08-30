@@ -26,7 +26,8 @@ export default class Runtime {
 		return await this.type.getProperty(name, this);
 	}
 	async get(name: string, _stack: IStack = defaultStack): Promise<Runtime> {
-		return (await this._get(name)) || (await import('./primitive/Null.class.ts')).default;
+		const AgalNull = (await import('./primitive/Null.class.ts')).default;
+		return (await this._get(name)) || AgalNull;
 	}
 	set<R extends Runtime>(name: string, stack: IStack, value: R | Promise<R>): Promise<R>;
 	set(name: string, stack: IStack, value: Runtime | Promise<Runtime>): Promise<Runtime>;
@@ -40,7 +41,8 @@ export default class Runtime {
 		return Promise.resolve(this.#props.keys());
 	}
 	async call(name: string, stack: IStack, ..._args: Runtime[]): Promise<Runtime> {
-		return new (await import('./internal/Error.class.ts')).AgalTypeError(
+		const {AgalTypeError} = await import('./internal/Error.class.ts');
+		return new AgalTypeError(
 			`'${name}' no es una función válida.`,
 			stack
 		).throw();
