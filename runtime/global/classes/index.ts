@@ -1,7 +1,7 @@
-import type Runtime from "../../values/Runtime.class.ts";
-import Errors from "./Errors.ts";
-import complex from "./complex.ts";
-import primitive from "./primitive.ts";
+import Errors from "agal/runtime/global/classes/Errors.ts";
+import complex from "agal/runtime/global/classes/complex.ts";
+import type Runtime from "agal/runtime/values/Runtime.class.ts";
+import primitive from "agal/runtime/global/classes/primitive.ts";
 
 export default async function (
 	setGlobal: (

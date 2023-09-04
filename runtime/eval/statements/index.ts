@@ -5,13 +5,13 @@ import type {
 	ReturnStatement,
 	TryCatchStatement,
 	WhileStatement,
-} from '../../../frontend/ast.ts';
-import Environment from '../../Environment.class.ts';
-import { type IStack, evaluate } from '../../interpreter.ts';
-import type Runtime from '../../values/Runtime.class.ts';
-import AgalError from '../../values/internal/Error.class.ts';
-import AgalNull, { AgalVoid } from '../../values/primitive/Null.class.ts';
-import Primitive from '../../values/primitive/Primitive.class.ts';
+} from 'agal/frontend/ast.ts';
+import Environment from "agal/runtime/Environment.class.ts";
+import type Runtime from 'agal/runtime/values/Runtime.class.ts';
+import { type IStack, evaluate } from "agal/runtime/interpreter.ts";
+import AgalError from "agal/runtime/values/internal/Error.class.ts";
+import Primitive from "agal/runtime/values/primitive/Primitive.class.ts";
+import AgalNull, { AgalVoid } from "agal/runtime/values/primitive/Null.class.ts";
 
 function contitionToBool(data: Runtime) {
 	if (data instanceof Primitive) {

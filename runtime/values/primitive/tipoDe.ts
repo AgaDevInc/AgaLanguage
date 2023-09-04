@@ -1,8 +1,8 @@
-import { AgalBoolean } from "./Boolean.class.ts";
-import { AgalNull } from "./Null.class.ts";
-import { AgalNumber } from "./Number.class.ts";
-import Primitive from "./Primitive.class.ts";
-import { AgalString } from "./String.class.ts";
+import { AgalNull } from "agal/runtime/values/primitive/Null.class.ts";
+import Primitive from "agal/runtime/values/primitive/Primitive.class.ts";
+import { AgalNumber } from "agal/runtime/values/primitive/Number.class.ts";
+import { AgalString } from "agal/runtime/values/primitive/String.class.ts";
+import { AgalBoolean } from "agal/runtime/values/primitive/Boolean.class.ts";
 
 export default function tipoDe(value: AgalBoolean): "buleano";
 export default function tipoDe(value: AgalNull): "nulo";

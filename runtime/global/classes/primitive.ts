@@ -1,7 +1,7 @@
-import { ClassPropertyExtra } from '../../../frontend/ast.ts';
-import Runtime, { defaultStack } from '../../values/Runtime.class.ts';
-import AgalClass from '../../values/complex/Class.class.ts';
-import AgalFunction from '../../values/complex/Function.class.ts';
+import { ClassPropertyExtra } from "agal/frontend/ast.ts";
+import AgalClass from "agal/runtime/values/complex/Class.class.ts";
+import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
+import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
 
 const Static = [ClassPropertyExtra.Static];
 

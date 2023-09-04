@@ -1,14 +1,14 @@
-import { FOREGROUND, colorize } from 'aga:Colors';
-import Runtime, { defaultStack } from '../Runtime.class.ts';
-import Properties from '../internal/Properties.class.ts';
-import AgalNull, { AgalVoid } from '../primitive/Null.class.ts';
-import StringGetter from '../primitive/String.class.ts';
-import AgalObject from './Object.class.ts';
-import { IStack, evaluate } from '../../interpreter.ts';
-import Environment from '../../Environment.class.ts';
-import { ClassDeclaration, ClassPropertyExtra } from '../../../frontend/ast.ts';
-import AgalError, { AgalTypeError } from '../internal/Error.class.ts';
-import AgalFunction from './Function.class.ts';
+import { FOREGROUND, colorize } from 'aga//colors_string/mod.ts';
+import Environment from "agal/runtime/Environment.class.ts";
+import { IStack, evaluate } from "agal/runtime/interpreter.ts";
+import AgalObject from "agal/runtime/values/complex/Object.class.ts";
+import StringGetter from "agal/runtime/values/primitive/String.class.ts";
+import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
+import Properties from "agal/runtime/values/internal/Properties.class.ts";
+import { ClassDeclaration, ClassPropertyExtra } from "agal/frontend/ast.ts";
+import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
+import AgalNull, { AgalVoid } from "agal/runtime/values/primitive/Null.class.ts";
+import AgalError, { AgalTypeError } from "agal/runtime/values/internal/Error.class.ts";
 
 const InstanceDefault = new Runtime() as AgalClass;
 InstanceDefault.makeInstance = () => new Properties(Runtime.loadProperties());

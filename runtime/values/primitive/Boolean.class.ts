@@ -1,6 +1,6 @@
-import type { IStack } from "../../interpreter.ts";
-import Properties from "../internal/Properties.class.ts";
-import Primitive from './Primitive.class.ts';
+import type { IStack } from "agal/runtime/interpreter.ts";
+import Primitive from "agal/runtime/values/primitive/Primitive.class.ts";
+import Properties from "agal/runtime/values/internal/Properties.class.ts";
 
 const memoData = new Map();
 const props = new Properties(Primitive.loadProperties());

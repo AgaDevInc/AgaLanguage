@@ -1,4 +1,4 @@
-import type { LikeNumber } from 'aga:ComplexMath/types';
+import type { LikeNumber } from 'aga//super_math/types.d.ts';
 
 export const enum BLOCK_TYPE {
 	FUNCTION_DECLARATION = 'FunctionDeclaration',

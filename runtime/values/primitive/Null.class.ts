@@ -1,5 +1,5 @@
-import type { IStack } from '../../interpreter.ts';
-import Primitive from './Primitive.class.ts';
+import type { IStack } from 'agal/runtime/interpreter.ts';
+import Primitive from "agal/runtime/values/primitive/Primitive.class.ts";
 
 export class AgalNull extends Primitive {
 	value = null;

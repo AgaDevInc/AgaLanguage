@@ -1,8 +1,8 @@
-import { agal } from './eval.ts';
-import type { IStack } from "./interpreter.ts";
-import type Runtime from './values/Runtime.class.ts';
-import AgalObject from './values/complex/Object.class.ts';
-import { AgalReferenceError } from './values/internal/Error.class.ts';
+import { agal } from "agal/runtime/eval.ts";
+import type { IStack } from "agal/runtime/interpreter.ts";
+import type Runtime from 'agal/runtime/values/Runtime.class.ts';
+import AgalObject from "agal/runtime/values/complex/Object.class.ts";
+import { AgalReferenceError } from "agal/runtime/values/internal/Error.class.ts";
 
 const cache = new Map();
 

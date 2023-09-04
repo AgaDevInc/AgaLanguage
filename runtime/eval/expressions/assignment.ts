@@ -1,10 +1,10 @@
 import type {
 	AssignmentExpr,
 	Expr,
-} from '../../../frontend/ast.ts';
-import type Environment from '../../Environment.class.ts';
-import { type IStack, evaluate } from '../../interpreter.ts';
-import AgalError, { AgalSyntaxError } from '../../values/internal/Error.class.ts';
+} from 'agal/frontend/ast.ts';
+import type Environment from 'agal/runtime/Environment.class.ts';
+import { type IStack, evaluate } from "agal/runtime/interpreter.ts";
+import AgalError, { AgalSyntaxError } from "agal/runtime/values/internal/Error.class.ts";
 
 function getName(exp: Expr): string {
 	if (!exp) return '';

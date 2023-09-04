@@ -1,7 +1,7 @@
-import type { MemberExpr } from '../../../frontend/ast.ts';
-import type Environment from '../../Environment.class.ts';
-import { IStack, evaluate } from '../../interpreter.ts';
-import AgalError from '../../values/internal/Error.class.ts';
+import type { MemberExpr } from 'agal/frontend/ast.ts';
+import { IStack, evaluate } from "agal/runtime/interpreter.ts";
+import type Environment from 'agal/runtime/Environment.class.ts';
+import AgalError from "agal/runtime/values/internal/Error.class.ts";
 
 export default async function member(
 	member: MemberExpr,

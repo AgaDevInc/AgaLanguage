@@ -1,12 +1,12 @@
-import { ClassPropertyExtra } from "../../../frontend/ast.ts";
-import AgalEval from "../../eval.ts";
-import Runtime, { defaultStack } from '../../values/Runtime.class.ts';
-import AgalArray from "../../values/complex/Array.class.ts";
-import AgalClass from '../../values/complex/Class.class.ts';
-import AgalFunction from '../../values/complex/Function.class.ts';
-import { AgalTypeError } from "../../values/internal/Error.class.ts";
-import parseRuntime from '../../values/parse.ts';
-import { AgalString } from "../../values/primitive/String.class.ts";
+import AgalEval from "agal/runtime/eval.ts";
+import parseRuntime from "agal/runtime/values/parse.ts";
+import { ClassPropertyExtra } from "agal/frontend/ast.ts";
+import AgalArray from "agal/runtime/values/complex/Array.class.ts";
+import AgalClass from "agal/runtime/values/complex/Class.class.ts";
+import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
+import { AgalString } from "agal/runtime/values/primitive/String.class.ts";
+import { AgalTypeError } from "agal/runtime/values/internal/Error.class.ts";
+import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
 
 const Static = [ClassPropertyExtra.Static]
 

@@ -1,8 +1,8 @@
-import { FOREGROUND, colorize } from 'aga:Colors';
-import Properties from './internal/Properties.class.ts';
-import type { IStack } from '../interpreter.ts';
-import type { Stmt } from '../../frontend/ast.ts';
-import type { LikeNumber } from 'aga:ComplexMath/types';
+import type { LikeNumber } from 'aga//super_math/types.d.ts';
+import { FOREGROUND, colorize } from 'aga//colors_string/mod.ts';
+import type { Stmt } from 'agal/frontend/ast.ts';
+import type { IStack } from 'agal/runtime/interpreter.ts';
+import Properties from "agal/runtime/values/internal/Properties.class.ts";
 
 const RootProperties = Properties.getRoot();
 

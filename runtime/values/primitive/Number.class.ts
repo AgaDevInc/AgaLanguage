@@ -1,9 +1,9 @@
-import type { LikeNumber } from "aga:ComplexMath/types";
-import Primitive from "./Primitive.class.ts";
-import type { IStack } from "../../interpreter.ts";
-import Runtime from "../Runtime.class.ts";
-import { multiply } from "aga:ComplexMath/fns";
-import Properties from "../internal/Properties.class.ts";
+import { multiply } from "aga//super_math/functions.ts";
+import type { LikeNumber } from "aga//super_math/types.d.ts";
+import type { IStack } from "agal/runtime/interpreter.ts";
+import Runtime from "agal/runtime/values/Runtime.class.ts";
+import Primitive from "agal/runtime/values/primitive/Primitive.class.ts";
+import Properties from "agal/runtime/values/internal/Properties.class.ts";
 
 const memoData = new Map();
 const props = new Properties(Primitive.loadProperties());

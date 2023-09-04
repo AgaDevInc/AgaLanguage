@@ -1,7 +1,7 @@
-import parseComplex from "./complex/parse.ts";
-import parsePrimitive from "./primitive/parse.ts";
-import Null from "./primitive/Null.class.ts";
-import type { IStack } from "../interpreter.ts";
+import type { IStack } from "agal/runtime/interpreter.ts";
+import Null from "agal/runtime/values/primitive/Null.class.ts";
+import parseComplex from "agal/runtime/values/complex/parse.ts";
+import parsePrimitive from "agal/runtime/values/primitive/parse.ts";
 
 // deno-lint-ignore no-explicit-any
 const parseRuntime = function parseRuntime(stack: IStack,value: any) {

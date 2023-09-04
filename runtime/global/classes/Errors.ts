@@ -1,6 +1,6 @@
 // deno-lint-ignore-file require-await
-import Runtime from "../../values/Runtime.class.ts";
-import AgalClass from "../../values/complex/Class.class.ts";
+import Runtime from "agal/runtime/values/Runtime.class.ts";
+import AgalClass from "agal/runtime/values/complex/Class.class.ts";
 
 export default async function (
 	setGlobal: (

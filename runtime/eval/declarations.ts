@@ -1,11 +1,11 @@
 // deno-lint-ignore-file require-await
-import { type VarDeclaration,type FunctionDeclaration,type ClassDeclaration, type ClassProperty } from "../../frontend/ast.ts";
-import type Environment from "../Environment.class.ts";
-import { IStack, evaluate } from "../interpreter.ts";
-import AgalClass from "../values/complex/Class.class.ts";
-import AgalFunction from "../values/complex/Function.class.ts";
-import AgalError from "../values/internal/Error.class.ts";
-import parseRuntime from "../values/parse.ts";
+import type { VarDeclaration, FunctionDeclaration, ClassDeclaration, ClassProperty } from "agal/frontend/ast.ts";
+import parseRuntime from "agal/runtime/values/parse.ts";
+import { IStack, evaluate } from "agal/runtime/interpreter.ts";
+import type Environment from "agal/runtime/Environment.class.ts";
+import AgalClass from "agal/runtime/values/complex/Class.class.ts";
+import AgalError from "agal/runtime/values/internal/Error.class.ts";
+import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
 
 export async function variable(
 	varDecl: VarDeclaration,

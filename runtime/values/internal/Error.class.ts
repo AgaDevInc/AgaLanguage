@@ -1,10 +1,10 @@
-import { colorize, FOREGROUND } from 'aga:Colors';
-import Runtime from '../Runtime.class.ts';
-import StringGetter from '../primitive/String.class.ts';
-import type { Expr, Stmt } from '../../../frontend/ast.ts';
-import { IStack } from '../../interpreter.ts';
-import { AgalNull } from '../primitive/Null.class.ts';
-import Properties from './Properties.class.ts';
+import { colorize, FOREGROUND } from 'aga//colors_string/mod.ts';
+import { IStack } from "agal/runtime/interpreter.ts";
+import type { Expr, Stmt } from 'agal/frontend/ast.ts';
+import Runtime from "agal/runtime/values/Runtime.class.ts";
+import { AgalNull } from "agal/runtime/values/primitive/Null.class.ts";
+import StringGetter from "agal/runtime/values/primitive/String.class.ts";
+import Properties from "agal/runtime/values/internal/Properties.class.ts";
 
 function resolveName(expr: Expr): string {
 	if (!expr) return '';

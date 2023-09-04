@@ -1,3 +1,4 @@
+import * as ComplexMath from 'aga//super_math/mod.ts';
 import {
 	type Stmt,
 	type Program,
@@ -22,11 +23,10 @@ import {
 	ErrorType,
 	IterableLiteral,
 	EXPRESSIONS_TYPE,
-} from './ast.ts';
-import { tokenize, Token, TokenType } from './lexer.ts';
-import * as ComplexMath from 'aga:ComplexMath';
+} from "agal/frontend/ast.ts";
+import { tokenize, Token, TokenType } from "agal/frontend/lexer.ts";
 
-const mathOperators = '+-*/%^'.split('')
+const mathOperators = '+-*/%^';
 
 type ArrayToken = Omit<Token[], 'shift'> & { shift: () => Token };
 

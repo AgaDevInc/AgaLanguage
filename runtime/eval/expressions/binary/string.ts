@@ -1,9 +1,9 @@
-import { LikeNumber } from 'aga:ComplexMath/types';
+import { isLikeNumber } from 'aga//super_math/util.ts';
+import type { LikeNumber } from 'aga//super_math/types.d.ts';
 import AgalError, {
 	AgalTypeError,
-} from '../../../values/internal/Error.class.ts';
-import { isLikeNumber } from 'https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/util.ts';
-import type { IStack } from '../../../interpreter.ts';
+} from "agal/runtime/values/internal/Error.class.ts";
+import type { IStack } from 'agal/runtime/interpreter.ts';
 
 function string_string(
 	left: string,

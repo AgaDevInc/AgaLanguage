@@ -1,9 +1,9 @@
-import Environment from './runtime/Environment.class.ts';
-import { IStack } from './runtime/interpreter.ts';
-import { agal, evalLine, getModuleScope } from './runtime/eval.ts';
-import { defaultStack } from './runtime/values/Runtime.class.ts';
-import AgalError, { AgalReferenceError } from './runtime/values/internal/Error.class.ts';
-import Application, { ApplicationListen } from './Application.class.ts';
+import { IStack } from "agal/runtime/interpreter.ts";
+import Environment from "agal/runtime/Environment.class.ts";
+import { defaultStack } from "agal/runtime/values/Runtime.class.ts";
+import { agal, evalLine, getModuleScope } from "agal/runtime/eval.ts";
+import Application, { ApplicationListen } from "agal/Application.class.ts";
+import AgalError, { AgalReferenceError } from "agal/runtime/values/internal/Error.class.ts";
 
 const version = '1.0.0';
 const name = 'Agal';

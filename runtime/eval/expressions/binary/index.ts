@@ -1,11 +1,11 @@
-import type { BinaryExpr } from "../../../../frontend/ast.ts";
-import type Environment from "../../../Environment.class.ts";
-import { type IStack, evaluate } from "../../../interpreter.ts";
-import AgalError from "../../../values/internal/Error.class.ts";
-import { AgalNumber } from "../../../values/primitive/Number.class.ts";
-import { AgalString } from "../../../values/primitive/String.class.ts";
-import binary_numeric from "./number.ts";
-import binary_string from "./string.ts";
+import type { BinaryExpr } from "agal/frontend/ast.ts";
+import type Environment from "agal/runtime/Environment.class.ts";
+import AgalError from "agal/runtime/values/internal/Error.class.ts";
+import { type IStack, evaluate } from "agal/runtime/interpreter.ts";
+import binary_string from "agal/runtime/eval/expressions/binary/string.ts";
+import { AgalNumber } from "agal/runtime/values/primitive/Number.class.ts";
+import { AgalString } from "agal/runtime/values/primitive/String.class.ts";
+import binary_numeric from "agal/runtime/eval/expressions/binary/number.ts";
 
 export default async function binary(bin: BinaryExpr, env: Environment,stack:IStack) {
 	const { left, operator, right } = bin;

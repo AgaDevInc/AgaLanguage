@@ -1,12 +1,12 @@
-import { Stmt } from "../frontend/ast.ts";
-import Environment from "./Environment.class.ts";
-import * as literal from "./eval/literal.ts";
-import * as statement from "./eval/statements/index.ts";
-import * as expressions from "./eval/expressions/index.ts";
-import type Runtime from "./values/Runtime.class.ts";
-import parseRuntime from "./values/parse.ts";
-import AgalError from "./values/internal/Error.class.ts";
-import * as declaration from "./eval/declarations.ts";
+import { Stmt } from "agal/frontend/ast.ts";
+import parseRuntime from "agal/runtime/values/parse.ts";
+import * as literal from "agal/runtime/eval/literal.ts";
+import Environment from "agal/runtime/Environment.class.ts";
+import type Runtime from "agal/runtime/values/Runtime.class.ts";
+import * as declaration from "agal/runtime/eval/declarations.ts";
+import * as statement from "agal/runtime/eval/statements/index.ts";
+import AgalError from "agal/runtime/values/internal/Error.class.ts";
+import * as expressions from "agal/runtime/eval/expressions/index.ts";
 type IRuntimeValue = InstanceType<typeof Runtime>;
 
 export interface IStack{

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file require-await
-import type Runtime from '../Runtime.class.ts';
+import type Runtime from 'agal/runtime/values/Runtime.class.ts';
 export default class Properties {
 	#data: Record<string, Runtime> = {};
 	#father?: Properties;

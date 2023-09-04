@@ -1,8 +1,8 @@
-import type AgalFunction from "../../values/complex/Function.class.ts";
-import type Environment from "../../Environment.class.ts";
-import type { CallExpr } from "../../../frontend/ast.ts";
-import { type IStack, evaluate } from "../../interpreter.ts";
-import AgalError, { AgalReferenceError } from "../../values/internal/Error.class.ts";
+import type { CallExpr } from "agal/frontend/ast.ts";
+import type Environment from "agal/runtime/Environment.class.ts";
+import { type IStack, evaluate } from "agal/runtime/interpreter.ts";
+import type AgalFunction from "agal/runtime/values/complex/Function.class.ts";
+import AgalError, { AgalReferenceError } from "agal/runtime/values/internal/Error.class.ts";
 
 export default async function call(call: CallExpr, env: Environment, stack:IStack){
   const fn = await evaluate(call.callee, env,stack);

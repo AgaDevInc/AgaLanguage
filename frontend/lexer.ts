@@ -2,7 +2,7 @@ import tokenizer, {
 	Token as PreToken,
 	TokenOptions,
 	skip,
-} from 'https://raw.githubusercontent.com/AdrianCraft07/ts-lib/main/tokenize.fn.ts';
+} from "aga//util/tokenize.fn.ts";
 
 
 type TokenCallback = Exclude<TokenOptions<TokenType>[0][1], TokenType>;

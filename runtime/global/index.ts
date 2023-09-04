@@ -1,17 +1,17 @@
 // deno-lint-ignore-file no-explicit-any require-await
-import { eval_complex } from 'aga:ComplexMath/Parser.class';
-import Environment from '../Environment.class.ts';
-import AgalEval from '../eval.ts';
-import Runtime, { defaultStack } from '../values/Runtime.class.ts';
-import AgalArray from '../values/complex/Array.class.ts';
-import AgalFunction from '../values/complex/Function.class.ts';
-import AgalObject from '../values/complex/Object.class.ts';
-import AgalError, { AgalTypeError } from '../values/internal/Error.class.ts';
-import BooleanGetter from '../values/primitive/Boolean.class.ts';
-import NullClass from '../values/primitive/Null.class.ts';
-import Primitive from '../values/primitive/Primitive.class.ts';
-import { AgalString } from '../values/primitive/String.class.ts';
-import tipoDe from '../values/primitive/tipoDe.ts';
+import { eval_complex } from 'aga//super_math/Parser.class.ts';
+import AgalEval from "agal/runtime/eval.ts";
+import Environment from "agal/runtime/Environment.class.ts";
+import tipoDe from "agal/runtime/values/primitive/tipoDe.ts";
+import AgalArray from "agal/runtime/values/complex/Array.class.ts";
+import NullClass from "agal/runtime/values/primitive/Null.class.ts";
+import AgalObject from "agal/runtime/values/complex/Object.class.ts";
+import Primitive from "agal/runtime/values/primitive/Primitive.class.ts";
+import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
+import BooleanGetter from "agal/runtime/values/primitive/Boolean.class.ts";
+import { AgalString } from "agal/runtime/values/primitive/String.class.ts";
+import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
+import AgalError, { AgalTypeError } from "agal/runtime/values/internal/Error.class.ts";
 
 const scope = new Environment();
 const global = new AgalObject();

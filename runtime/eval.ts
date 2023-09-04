@@ -1,14 +1,14 @@
-import Parser from '../frontend/parser.ts';
-import Environment from './Environment.class.ts';
-import getGlobalScope from './global/index.ts';
-import { IStack, evaluate } from './interpreter.ts';
-import makeRequire from './require.ts';
-import Runtime, { defaultStack } from "./values/Runtime.class.ts";
-import AgalArray from './values/complex/Array.class.ts';
-import AgalFunction from './values/complex/Function.class.ts';
-import AgalObject from './values/complex/Object.class.ts';
-import AgalError, { AgalTypeError } from './values/internal/Error.class.ts';
-import StringGetter, { AgalString } from './values/primitive/String.class.ts';
+import Parser from "agal/frontend/parser.ts";
+import makeRequire from 'agal/runtime/require.ts';
+import getGlobalScope from 'agal/runtime/global/index.ts';
+import Environment from 'agal/runtime/Environment.class.ts';
+import { IStack, evaluate } from 'agal/runtime/interpreter.ts';
+import AgalArray from 'agal/runtime/values/complex/Array.class.ts';
+import AgalObject from 'agal/runtime/values/complex/Object.class.ts';
+import AgalFunction from 'agal/runtime/values/complex/Function.class.ts';
+import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
+import AgalError, { AgalTypeError } from 'agal/runtime/values/internal/Error.class.ts';
+import StringGetter, { AgalString } from 'agal/runtime/values/primitive/String.class.ts';
 
 export async function getModule(path: string): Promise<AgalObject> {
 	const module = new AgalObject();

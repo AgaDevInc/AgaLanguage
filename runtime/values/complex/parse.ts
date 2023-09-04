@@ -1,8 +1,8 @@
-import { IStack } from "../../interpreter.ts";
-import Runtime from '../Runtime.class.ts';
-import AgalArray from './Array.class.ts';
-import AgalFunction, { TFunction } from './Function.class.ts';
-import AgalObject from './Object.class.ts';
+import { IStack } from "agal/runtime/interpreter.ts";
+import Runtime from "agal/runtime/values/Runtime.class.ts";
+import AgalArray from "agal/runtime/values/complex/Array.class.ts";
+import AgalObject from "agal/runtime/values/complex/Object.class.ts";
+import AgalFunction, { TFunction } from "agal/runtime/values/complex/Function.class.ts";
 
 const parseComplex = function parseComplex(stack: IStack,value?: unknown) {
 	if(value instanceof Runtime) return value;

@@ -1,8 +1,8 @@
-import { colorize, FOREGROUND } from "aga:Colors";
-import parseRuntime from "../parse.ts";
-import Runtime, { defaultStack } from "../Runtime.class.ts";
-import type { IStack } from "../../interpreter.ts";
-import Properties from "../internal/Properties.class.ts";
+import { colorize, FOREGROUND } from "aga//colors_string/mod.ts";
+import parseRuntime from "agal/runtime/values/parse.ts";
+import type { IStack } from "agal/runtime/interpreter.ts";
+import Properties from "agal/runtime/values/internal/Properties.class.ts";
+import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
 
 const props = new Properties(Runtime.loadProperties());
 export default class AgalObject extends Runtime{

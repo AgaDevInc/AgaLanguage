@@ -1,8 +1,8 @@
-import Runtime, { defaultStack } from '../Runtime.class.ts';
-import { AgalTypeError } from '../internal/Error.class.ts';
-import Properties from '../internal/Properties.class.ts';
-import NumberGetter from './Number.class.ts';
-import Primitive from './Primitive.class.ts';
+import NumberGetter from 'agal/runtime/values/primitive/Number.class.ts';
+import Primitive from 'agal/runtime/values/primitive/Primitive.class.ts';
+import Properties from 'agal/runtime/values/internal/Properties.class.ts';
+import { AgalTypeError } from 'agal/runtime/values/internal/Error.class.ts';
+import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
 
 const memoData = new Map();
 const StringProperties = new Properties(Primitive.loadProperties());
