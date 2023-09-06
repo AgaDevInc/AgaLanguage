@@ -1,11 +1,11 @@
 // deno-lint-ignore-file require-await
-import type { VarDeclaration, FunctionDeclaration, ClassDeclaration, ClassProperty } from "agal/frontend/ast.ts";
-import parseRuntime from "agal/runtime/values/parse.ts";
-import { IStack, evaluate } from "agal/runtime/interpreter.ts";
-import type Environment from "agal/runtime/Environment.class.ts";
-import AgalClass from "agal/runtime/values/complex/Class.class.ts";
-import AgalError from "agal/runtime/values/internal/Error.class.ts";
-import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
+import type { VarDeclaration, FunctionDeclaration, ClassDeclaration, ClassProperty } from "magal/frontend/ast.ts";
+import parseRuntime from "magal/runtime/values/parse.ts";
+import { IStack, evaluate } from "magal/runtime/interpreter.ts";
+import type Environment from "magal/runtime/Environment.class.ts";
+import AgalClass from "magal/runtime/values/complex/Class.class.ts";
+import AgalError from "magal/runtime/values/internal/Error.class.ts";
+import AgalFunction from "magal/runtime/values/complex/Function.class.ts";
 
 export async function variable(
 	varDecl: VarDeclaration,

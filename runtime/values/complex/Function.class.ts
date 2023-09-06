@@ -1,12 +1,12 @@
 import { colorize, FOREGROUND } from 'aga//colors_string/mod.ts';
-import { IStack } from "agal/runtime/interpreter.ts";
-import Environment from "agal/runtime/Environment.class.ts";
-import { AgalVoid } from "agal/runtime/values/primitive/Null.class.ts";
-import StringGetter from "agal/runtime/values/primitive/String.class.ts";
-import Properties from "agal/runtime/values/internal/Properties.class.ts";
-import { BLOCK_TYPE, type FunctionDeclaration } from "agal/frontend/ast.ts";
-import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
-import { AgalReferenceError } from "agal/runtime/values/internal/Error.class.ts";
+import { evaluate, IStack } from "magal/runtime/interpreter.ts";
+import Environment from "magal/runtime/Environment.class.ts";
+import { AgalVoid } from "magal/runtime/values/primitive/Null.class.ts";
+import StringGetter from "magal/runtime/values/primitive/String.class.ts";
+import Properties from "magal/runtime/values/internal/Properties.class.ts";
+import { BLOCK_TYPE, type FunctionDeclaration } from "magal/frontend/ast.ts";
+import Runtime, { defaultStack } from "magal/runtime/values/Runtime.class.ts";
+import { AgalReferenceError } from "magal/runtime/values/internal/Error.class.ts";
 
 const defaultDeclaration: FunctionDeclaration = {
 	col: 0,
@@ -75,7 +75,7 @@ export default class AgalFunction extends Runtime {
 			}
 			env.declareVar(param, stack, value, this.decl);
 		});
-		return (await import('../../interpreter.ts')).evaluate(
+		return evaluate(
 			this.decl.body,
 			env,
 			stack
@@ -128,4 +128,8 @@ export default class AgalFunction extends Runtime {
 		return new AgalFunction(fn);
 	}
 	private static default: AgalFunction;
+	toConsole(): string {
+			const name = this.getSync('nombre')?.toString()
+			return colorize(`[Agal Función ${name || '<anónima>'}]`, FOREGROUND.CYAN);
+	}
 }

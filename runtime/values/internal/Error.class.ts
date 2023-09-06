@@ -1,10 +1,17 @@
 import { colorize, FOREGROUND } from 'aga//colors_string/mod.ts';
-import { IStack } from "agal/runtime/interpreter.ts";
-import type { Expr, Stmt } from 'agal/frontend/ast.ts';
-import Runtime from "agal/runtime/values/Runtime.class.ts";
-import { AgalNull } from "agal/runtime/values/primitive/Null.class.ts";
-import StringGetter from "agal/runtime/values/primitive/String.class.ts";
-import Properties from "agal/runtime/values/internal/Properties.class.ts";
+import { IStack } from 'magal/runtime/interpreter.ts';
+import {
+	BLOCK_TYPE,
+	LITERALS_TYPE,
+	type Expr,
+	type Stmt,
+	EXPRESSIONS_TYPE,
+	STATEMENTS_TYPE,
+} from 'magal/frontend/ast.ts';
+import Runtime from 'magal/runtime/values/Runtime.class.ts';
+import { AgalNull } from 'magal/runtime/values/primitive/Null.class.ts';
+import StringGetter from 'magal/runtime/values/primitive/String.class.ts';
+import Properties from 'magal/runtime/values/internal/Properties.class.ts';
 
 function resolveName(expr: Expr): string {
 	if (!expr) return '';
@@ -25,50 +32,53 @@ function parseStmt(stmt: Stmt): string {
 		FOREGROUND.YELLOW
 	)}:${colorize(stmt.col + '', FOREGROUND.YELLOW)}`;
 	switch (stmt.kind) {
-		case 'FunctionDeclaration':
+		case BLOCK_TYPE.FUNCTION_DECLARATION:
 			return `Funcion '${stmt.identifier}' en ${location}`;
-		case 'ArrayLiteral':
-			return `Lista en ${location}`;
-		case 'AssignmentExpr':
-			return `Assignation en ${location}`;
-		case 'BinaryExpr':
-			return `Operacion binaria en ${location}`;
-		case 'BreakStatement':
-			return `Romper en ${location}`;
-		case 'CallExpr':
-			return `Llamada a '${resolveName(stmt.callee)}' en ${location}`;
-		case 'ClassDeclaration':
-			return `Clase '${stmt.identifier}' en ${location}`;
-		case 'ContinueStatement':
-			return `Continuar en ${location}`;
-		case 'ClassProperty':
-			return `Propiedad de clase '${stmt.identifier}' en ${location}`;
-		case 'ElseStatement':
+		case BLOCK_TYPE.ELSE_STATEMENT:
 			return `Entonces en ${location}`;
-		case 'Identifier':
-			return `Identificador '${stmt.symbol}' en ${location}`;
-		case 'IfStatement':
+		case BLOCK_TYPE.IF_STATEMENT:
 			return `Si en ${location}`;
-		case 'IterableLiteral':
-			return `Iterable en ${location}`;
-		case 'MemberExpr':
-			return `Miembro '${resolveName(stmt)}' en ${location}`;
-		case 'NumericLiteral':
-			return `Numero '${stmt.value}' en ${location}`;
-		case 'ObjectLiteral':
-			return `Objeto en ${location}`;
-		case 'WhileStatement':
+		case BLOCK_TYPE.WHILE_STATEMENT:
 			return `Mientras en ${location}`;
-		case 'PropertyIdentifier':
-			return `Propiedad '${stmt.symbol}' en ${location}`;
-		case 'ReturnStatement':
-			return `Retornar en ${location}`;
-		case 'StringLiteral':
-			return `Cadena '${stmt.value}' en ${location}`;
-		case 'VarDeclaration':
-			return `Declaracion de variable '${stmt.identifier}' en ${location}`;
-		case 'TryCatch':
+		case BLOCK_TYPE.TRY:
 			return `Intentar en ${location}`;
+		case BLOCK_TYPE.CLASS_DECLARATION:
+			return `Clase '${stmt.identifier}' en ${location}`;
+
+		case EXPRESSIONS_TYPE.ASSIGNMENT_EXPR:
+			return `Assignation en ${location}`;
+		case EXPRESSIONS_TYPE.BINARY_EXPR:
+			return `Operacion binaria en ${location}`;
+		case EXPRESSIONS_TYPE.CALL_EXPR:
+			return `Llamada a '${resolveName(stmt.callee)}' en ${location}`;
+		case EXPRESSIONS_TYPE.MEMBER_EXPR:
+			return `Miembro '${resolveName(stmt)}' en ${location}`;
+
+		case LITERALS_TYPE.ARRAY_LITERAL:
+			return `Lista en ${location}`;
+		case LITERALS_TYPE.CLASS_PROPERTY:
+			return `Propiedad de clase '${stmt.identifier}' en ${location}`;
+		case LITERALS_TYPE.IDENTIFIER:
+			return `Identificador '${stmt.symbol}' en ${location}`;
+		case LITERALS_TYPE.ITERABLE_LITERAL:
+			return `Iterable en ${location}`;
+		case LITERALS_TYPE.NUMERIC_LITERAL:
+			return `Numero '${stmt.value}' en ${location}`;
+		case LITERALS_TYPE.OBJECT_LITERAL:
+			return `Objeto en ${location}`;
+		case LITERALS_TYPE.PROPERTY_IDENTIFIER:
+			return `Propiedad '${stmt.symbol}' en ${location}`;
+		case LITERALS_TYPE.STRING_LITERAL:
+			return `Cadena '${stmt.value}' en ${location}`;
+
+		case STATEMENTS_TYPE.VAR_DECLARATION:
+			return `Declaracion de variable '${stmt.identifier}' en ${location}`;
+		case STATEMENTS_TYPE.RETURN_STATEMENT:
+			return `Retornar en ${location}`;
+		case STATEMENTS_TYPE.BREAK_STATEMENT:
+			return `Romper en ${location}`;
+		case STATEMENTS_TYPE.CONTINUE_STATEMENT:
+			return `Continuar en ${location}`;
 		default:
 			return `En ${location}`;
 	}
@@ -124,6 +134,9 @@ export default class AgalError extends Runtime {
 	}
 	static loadProperties(): Properties {
 		return props;
+	}
+	toString(){
+		return `${this.name}: ${this.message} ${this.pila}`;
 	}
 }
 

@@ -1,17 +1,6 @@
 {
   "version": "2",
   "remote": {
-    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/Angle.class.ts": "1560e1d6648f0f10f9f7311c0b1fee058f37f25d1cb7f491b3d7963eeaefdf62",
-    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/ComplexNumber.class.ts": "c006e4cfd419cd476efa519affbfb771e9cd65a2e2ce676293bddd1f7b6b1f80",
-    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/Polar.class.ts": "d49e69680ea734db980b3c7502781d1f7c96ffdfa5316767a2ff6f7eef9f0aee",
-    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/constants.ts": "ac7278910f2230ba9bd8242f64a92bbe96fe7f779bcd36f3e0bddc346f77cff6",
-    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/functions.ts": "e6df7b2f685da8bae0c47821ca164f9bfe8121a7577a3d45dd320f2bb80f2701",
-    "https://agacdn.onrender.com/AgaDev:ComplexMath@1.0.0/util.ts": "11ac72206525e9d5f19fad76b2631c74717c8edc44833ec1b3a38dfb024a1b6c",
-    "https://agacdn.onrender.com/AgaDev:colors@1.0.0/": "c8c6ffaea2aabc39dd705837f107ab9c479ab6aae37e5d1fd9cade36554c3425",
-    "https://agacdn.onrender.com/AgaDev:colors@1.0.0/constants.ts": "de1af73c44584e3f237f0423fbe61cc369b8e64b97414ea24659f320aa906d42",
-    "https://agacdn.onrender.com/AgaDev:colors@1.0.0/functions.ts": "d3e8ae516fa1ee47199bec1f2b7412d5dab94c5bd803f388d300b7a6c3444772",
-    "https://agacdn.onrender.com/AgaDev:utils@1.0.0/validation.ts": "af79fae952a5b396f269a9c377dc5e196a50d55e8194a3e3a0cefe7e54f42250",
-    "https://agacdn.onrender.com/AgaDev:utils@1.1.0/Inspectable.class.ts": "421946a3320608e2c12a8255dc10a305c27dface94ba16eb290cf24606a5d022",
     "https://deno.land/std@0.200.0/assert/assert.ts": "9a97dad6d98c238938e7540736b826440ad8c1c1e54430ca4c4e623e585607ee",
     "https://deno.land/std@0.200.0/assert/assertion_error.ts": "4d0bde9b374dfbcbe8ac23f54f567b77024fb67dbb1906a852d67fe050d42f56",
     "https://deno.land/std@0.200.0/async/abortable.ts": "fd682fa46f3b7b16b4606a5ab52a7ce309434b76f820d3221bdfb862719a15d7",
@@ -41,9 +30,17 @@
     "https://deno.land/x/super_math@1.0.0/Polar.class.ts": "3ad72888edd521197df8e9e4e8ce2ac44fa1d1cae86d32049cb348ff4a4b2be0",
     "https://deno.land/x/super_math@1.0.0/constants.ts": "ac7278910f2230ba9bd8242f64a92bbe96fe7f779bcd36f3e0bddc346f77cff6",
     "https://deno.land/x/super_math@1.0.0/functions.ts": "1307c024a775d99adbf127d69b10c12276a31ac8a9a76ddd6d2c0fe5cc0bd5b6",
-    "https://deno.land/x/super_math@1.0.0/mod.ts": "3912b2add47bb085f29be038a0a35dc37c86e597ccbefc61682150aec929e67c",
-    "https://deno.land/x/super_math@1.0.0/util.ts": "ea222c290d4e72aa42a66ee3e27223c8591470dcb64f0159cf104641c9391bf1",
-    "https://raw.githubusercontent.com/AdrianCraft07/ts-lib/main/Errors.consts.ts": "0a88752e3f923e0af15c1d7f10143961aa3f1157e17d944781d15613c312ceb2",
-    "https://raw.githubusercontent.com/AdrianCraft07/ts-lib/main/tokenize.fn.ts": "d027355b29b8b81ce24fc2576bb695ad8b10223ce0481247a4c8bf8b17ec9181"
+    "https://deno.land/x/super_math@1.0.0/util.ts": "ea222c290d4e72aa42a66ee3e27223c8591470dcb64f0159cf104641c9391bf1"
+  },
+  "npm": {
+    "specifiers": {
+      "@types/node": "@types/node@18.16.19"
+    },
+    "packages": {
+      "@types/node@18.16.19": {
+        "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
+        "dependencies": {}
+      }
+    }
   }
 }

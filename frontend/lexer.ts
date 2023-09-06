@@ -8,49 +8,50 @@ import tokenizer, {
 type TokenCallback = Exclude<TokenOptions<TokenType>[0][1], TokenType>;
 
 export const enum TokenType {
-	// Types
-	Number = 'Number',
-	String = 'String',
-	Identifier = 'Identifier',
+  // Types
+  Number='Number',
+  String='String',
+  Identifier='Identifier',
 
-	// Operators
-	Equals = 'Equals', // =
-	Negate = 'Negate', // !
-	And = 'And', // &
-	Or = 'Or', // |
+  // Operators
+  Equals='Equals',
+  Negate='Negate',
+  And='And',
+  Or='Or',
 
-	OpenParen = 'OpenParen', // (
-	CloseParen = 'CloseParen', // )
-	BinaryOperator = 'BinaryOperator', // + - * / %
-	Semicolon = 'Semicolon', // ;
-	Comma = 'Comma', // ,
-	Dot = 'Dot', // .
-	Colon = 'Colon', // :
-	OpenBrace = 'OpenBrace', // {
-	CloseBrace = 'CloseBrace', // }
-	OpenBracket = 'OpenBracket', // [
-	CloseBracket = 'CloseBracket', // ]
-	OpenAngle = 'OpenAngle', // <
-	CloseAngle = 'CloseAngle', // >
-	Backslash = 'Backslash', // \
-	EOF = 'EOF', // End of file
-	Error = 'Error',
+  OpenParen='OpenParen',
+  CloseParen='CloseParen',
+  BinaryOperator='BinaryOperator',
+  Semicolon='Semicolon',
+  Comma='Comma',
+  Dot='Dot',
+  Colon='Colon',
+  OpenBrace='OpenBrace',
+  CloseBrace='CloseBrace',
+  OpenBracket='OpenBracket',
+  CloseBracket='CloseBracket',
+  OpenAngle='OpenAngle',
+  CloseAngle='CloseAngle',
+  Backslash='Backslash',
+  EOF='EOF',
+  Error='Error',
 
-	// Keywords
-	Definir = 'Def',
-	Const = 'Const',
-	Funcion = 'Fn',
-	Si = 'Si',
-	Entonces = 'Ent',
-	Retorna = 'Ret',
-	Mientras = 'Mien',
-	Romper = 'Rom',
-	Continuar = 'Cont',
-	Clase = 'Clase',
-	Estatico = 'Est',
-	Extiende = 'Extiende',
-	Intentar = 'Intentar',
-	Capturar = 'Capturar',
+  // Keywords
+  Definir='Def',
+  Const='Const',
+  Funcion='Fn',
+  Si='Si',
+  Entonces='Ent',
+  Retorna='Ret',
+  Mientras='Mien',
+  Romper='Rom',
+  Continuar='Cont',
+  Clase='Clase',
+  Estatico='Est',
+  Extiende='Extiende',
+  Intentar='Intentar',
+  Capturar='Capturar',
+  Finalmente="Finalmente"
 }
 export type Token = PreToken<TokenType> & {file:string};
 
@@ -70,6 +71,7 @@ const KEYWORDS: Record<string, TokenType> = {
 	extiende: TokenType.Extiende,
 	intentar: TokenType.Intentar,
 	capturar: TokenType.Capturar,
+	finalmente: TokenType.Finalmente,
 };
 
 // Validate that the character is a letter

@@ -1,9 +1,10 @@
 import { multiply } from "aga//super_math/functions.ts";
 import type { LikeNumber } from "aga//super_math/types.d.ts";
-import type { IStack } from "agal/runtime/interpreter.ts";
-import Runtime from "agal/runtime/values/Runtime.class.ts";
-import Primitive from "agal/runtime/values/primitive/Primitive.class.ts";
-import Properties from "agal/runtime/values/internal/Properties.class.ts";
+import type { IStack } from "magal/runtime/interpreter.ts";
+import Runtime from "magal/runtime/values/Runtime.class.ts";
+import Primitive from "magal/runtime/values/primitive/Primitive.class.ts";
+import Properties from "magal/runtime/values/internal/Properties.class.ts";
+import { AgalTypeError } from "magal/runtime/values/internal/Error.class.ts";
 
 const memoData = new Map();
 const props = new Properties(Primitive.loadProperties());
@@ -12,7 +13,6 @@ export class AgalNumber extends Primitive {
   constructor(public readonly value: LikeNumber) { super() }
   async call(_name: string,stack: IStack, _este: Runtime, other: Runtime): Promise<Runtime> {
     if(other instanceof AgalNumber) return NumberGetter(multiply(this.value, other.value));
-    const {AgalTypeError} = await import('../internal/Error.class.ts');
     return new AgalTypeError(`No se puede multiplicar un número con '${await other.aCadena()}'`,stack).throw();
   }
   static loadProperties() {

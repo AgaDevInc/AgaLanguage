@@ -1,8 +1,8 @@
-import { IStack } from "agal/runtime/interpreter.ts";
-import Runtime from "agal/runtime/values/Runtime.class.ts";
-import AgalArray from "agal/runtime/values/complex/Array.class.ts";
-import AgalObject from "agal/runtime/values/complex/Object.class.ts";
-import AgalFunction, { TFunction } from "agal/runtime/values/complex/Function.class.ts";
+import { IStack } from "magal/runtime/interpreter.ts";
+import Runtime from "magal/runtime/values/Runtime.class.ts";
+import AgalArray from "magal/runtime/values/complex/Array.class.ts";
+import AgalObject from "magal/runtime/values/complex/Object.class.ts";
+import AgalFunction, { TFunction } from "magal/runtime/values/complex/Function.class.ts";
 
 const parseComplex = function parseComplex(stack: IStack,value?: unknown) {
 	if(value instanceof Runtime) return value;

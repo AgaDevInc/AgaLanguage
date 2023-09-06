@@ -1,8 +1,16 @@
+import Inspecteable from 'aga//util/Inspectable.class.ts';
 import type { LikeNumber } from 'aga//super_math/types.d.ts';
 import { FOREGROUND, colorize } from 'aga//colors_string/mod.ts';
-import type { Stmt } from 'agal/frontend/ast.ts';
-import type { IStack } from 'agal/runtime/interpreter.ts';
-import Properties from "agal/runtime/values/internal/Properties.class.ts";
+import type { Stmt } from 'magal/frontend/ast.ts';
+import type { IStack } from 'magal/runtime/interpreter.ts';
+import Properties from 'magal/runtime/values/internal/Properties.class.ts';
+import AgalArray from 'magal/runtime/values/complex/Array.class.ts';
+import AgalFunction from 'magal/runtime/values/complex/Function.class.ts';
+import { AgalTypeError } from 'magal/runtime/values/internal/Error.class.ts';
+import AgalBoolean from 'magal/runtime/values/primitive/Boolean.class.ts';
+import AgalNull from 'magal/runtime/values/primitive/Null.class.ts';
+import AgalNumber from 'magal/runtime/values/primitive/Number.class.ts';
+import AgalString from 'magal/runtime/values/primitive/String.class.ts';
 
 const RootProperties = Properties.getRoot();
 
@@ -10,15 +18,22 @@ export const defaultStack: IStack = {
 	value: null as unknown as Stmt,
 	next: null,
 };
-export default class Runtime {
+export default class Runtime extends Inspecteable {
 	#props: Properties;
 	constructor() {
+		super();
 		this.#props = new Properties(this.type.loadProperties());
+	}
+	instanceof(type: Properties): boolean {
+		return this.#props.is(type);
 	}
 	protected async _set(name: string, value: Runtime | Promise<Runtime>) {
 		const data = await Promise.resolve(value);
 		this.#props.set(name, data);
 		return data;
+	}
+	getSync(name: string): Runtime | null {
+		return this.#props.get(name);
 	}
 	protected async _get(name: string): Promise<Runtime | null> {
 		const data = await Promise.resolve(this.#props.get(name));
@@ -26,7 +41,6 @@ export default class Runtime {
 		return await this.type.getProperty(name, this);
 	}
 	async get(name: string, _stack: IStack = defaultStack): Promise<Runtime> {
-		const AgalNull = (await import('./primitive/Null.class.ts')).default;
 		return (await this._get(name)) || AgalNull;
 	}
 	set<R extends Runtime>(name: string, stack: IStack, value: R | Promise<R>): Promise<R>;
@@ -37,15 +51,18 @@ export default class Runtime {
 	has(name: string): Promise<boolean> {
 		return Promise.resolve(this.#props.has(name));
 	}
+	deepKeys(): string[] {
+		return this.#props.deepKeys();
+	}
+	keysSync(): string[] {
+		return this.#props.keys();
+	}
 	keys(): Promise<string[]> {
 		return Promise.resolve(this.#props.keys());
 	}
+	// deno-lint-ignore require-await
 	async call(name: string, stack: IStack, ..._args: Runtime[]): Promise<Runtime> {
-		const {AgalTypeError} = await import('./internal/Error.class.ts');
-		return new AgalTypeError(
-			`'${name}' no es una función válida.`,
-			stack
-		).throw();
+		return new AgalTypeError(`'${name}' no es una función válida.`, stack).throw();
 	}
 	protected _aCadena(): Promise<string> {
 		return Promise.resolve('[valor en tiempo de ejecución]');
@@ -112,12 +129,6 @@ export default class Runtime {
 		return RootProperties;
 	}
 	static async getProperty(name: string, _este: Runtime): Promise<Runtime | null> {
-		const AgalFunction = (await import('./complex/Function.class.ts')).default;
-		const AgalString = (await import('./primitive/String.class.ts')).default;
-		const AgalNumber = (await import('./primitive/Number.class.ts')).default;
-		const AgalBoolean = (await import('./primitive/Boolean.class.ts')).default;
-		const AgalArray = (await import('./complex/Array.class.ts')).default;
-
 		if (name === 'aBuleano')
 			return await RootProperties.set(
 				'aBuleano',
@@ -167,5 +178,8 @@ export default class Runtime {
 				)
 			);
 		return null;
+	}
+	toString(){
+		return `[${this.type.name}]`;
 	}
 }

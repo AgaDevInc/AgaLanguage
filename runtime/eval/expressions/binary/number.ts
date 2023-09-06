@@ -1,6 +1,6 @@
 import * as ComplexMath from 'aga//super_math/functions.ts';
 import type { LikeNumber } from 'aga//super_math/types.d.ts';
-import type { IStack } from "agal/runtime/interpreter.ts";
+import type { IStack } from "magal/runtime/interpreter.ts";
 
 function lessThan(left: LikeNumber, right: LikeNumber): boolean {
 	if (typeof left == 'number')

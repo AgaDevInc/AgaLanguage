@@ -4,6 +4,6 @@
     "aga//super_math/": "https://deno.land/x/super_math@1.0.0/",
     "aga//util/": "https://deno.land/x/aga_util@1.0.0/",
 
-    "agal/": "./"
+    "magal/": "./"
   }
 }

@@ -2,8 +2,8 @@ import { isLikeNumber } from 'aga//super_math/util.ts';
 import type { LikeNumber } from 'aga//super_math/types.d.ts';
 import AgalError, {
 	AgalTypeError,
-} from "agal/runtime/values/internal/Error.class.ts";
-import type { IStack } from 'agal/runtime/interpreter.ts';
+} from "magal/runtime/values/internal/Error.class.ts";
+import type { IStack } from 'magal/runtime/interpreter.ts';
 
 function string_string(
 	left: string,

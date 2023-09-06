@@ -1,10 +1,14 @@
-import { ClassPropertyExtra } from "agal/frontend/ast.ts";
-import AgalClass from "agal/runtime/values/complex/Class.class.ts";
-import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
-import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
+import { ClassPropertyExtra } from "magal/frontend/ast.ts";
+import AgalClass from "magal/runtime/values/complex/Class.class.ts";
+import AgalFunction from "magal/runtime/values/complex/Function.class.ts";
+import Runtime, { defaultStack } from "magal/runtime/values/Runtime.class.ts";
+import BooleanGetter,{ AgalBoolean } from "magal/runtime/values/primitive/Boolean.class.ts";
+import NumberGetter,{ AgalNumber } from "magal/runtime/values/primitive/Number.class.ts";
+import StringGetter,{ AgalString } from "magal/runtime/values/primitive/String.class.ts";
 
 const Static = [ClassPropertyExtra.Static];
 
+// deno-lint-ignore require-await
 export default async function (
 	setGlobal: (
 		name: string,
@@ -14,15 +18,6 @@ export default async function (
 	) => void,
 	_setKeyword: (name: string, value: Runtime) => void
 ) {
-	const { AgalBoolean, default: BooleanGetter } = await import(
-		'../../values/primitive/Boolean.class.ts'
-	);
-	const { AgalNumber, default: NumberGetter } = await import(
-		'../../values/primitive/Number.class.ts'
-	);
-	const { AgalString, default: StringGetter } = await import(
-		'../../values/primitive/String.class.ts'
-	);
 	const Buleano = new AgalClass(
 		'Buleano',
 		{

@@ -1,8 +1,3 @@
-pintar('inicio')
-intentar{
-  def a = analizar('e^πi')
-  pintar(a)
-} capturar(error){
-  pintar(error.aConsolaEn())
-}
-pintar('fin')
+const a = requiere('./iniciar.agal');
+pintar(a)
+modulo.exporta = a

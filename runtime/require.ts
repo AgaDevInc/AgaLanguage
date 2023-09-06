@@ -1,8 +1,8 @@
-import { agal } from "agal/runtime/eval.ts";
-import type { IStack } from "agal/runtime/interpreter.ts";
-import type Runtime from 'agal/runtime/values/Runtime.class.ts';
-import AgalObject from "agal/runtime/values/complex/Object.class.ts";
-import { AgalReferenceError } from "agal/runtime/values/internal/Error.class.ts";
+import { agal } from 'magal/runtime/eval.ts';
+import type { IStack } from 'magal/runtime/interpreter.ts';
+import type Runtime from 'magal/runtime/values/Runtime.class.ts';
+import AgalObject from 'magal/runtime/values/complex/Object.class.ts';
+import { AgalReferenceError } from 'magal/runtime/values/internal/Error.class.ts';
 
 const cache = new Map();
 
@@ -25,17 +25,25 @@ export default async function makeRequire(
 	pathFile: string,
 	stack: IStack
 ): Promise<Runtime> {
-	const path = resolve(`${await modulo.get('ruta')}/${pathFile}`);
+	const folder = await (await modulo.get('ruta')).aCadena() || JSRuntime.cwd();
+	const path = resolve(JSRuntime.resolve(folder,pathFile));
 	if (cache.has(path)) return cache.get(path);
-	const file = await Deno.readTextFile(path).catch(() => null);
+
+	const file = await JSRuntime.readFile(path).catch(() => null);
 	if (file === null)
 		return new AgalReferenceError(
-			`No se pudo encontrar el archivo '${pathFile}' en '${path}'`,stack
+			`No se pudo encontrar el archivo '${pathFile}' en '${path}'`,
+			stack
 		).throw();
 	const code = await agal(file, path, stack);
 	cache.set(path, code);
-	const hijos = await modulo.get('hijos')
-	const hijos_agregar = await hijos.get('agregar')
-	await hijos_agregar.call('agregar', stack, hijos, AgalObject.from({nombre:pathFile, ruta:path}, stack));
+	const hijos = await modulo.get('hijos');
+	const hijos_agregar = await hijos.get('agregar');
+	await hijos_agregar.call(
+		'agregar',
+		stack,
+		hijos,
+		AgalObject.from({ nombre: pathFile, ruta: path }, stack)
+	);
 	return code;
 }

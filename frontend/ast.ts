@@ -7,7 +7,9 @@ export const enum BLOCK_TYPE {
 	WHILE_STATEMENT = 'WhileStatement',
 	CLASS_DECLARATION = 'ClassDeclaration',
 	PROGRAM = 'Program',
-	TRY_CATCH = 'TryCatch',
+	TRY = 'Try',
+	CATCH = 'Catch',
+	FINALLY = 'Finally',
 }
 export const enum STATEMENTS_TYPE {
 	VAR_DECLARATION = 'VarDeclaration',
@@ -110,12 +112,20 @@ export type BlockStatement =
 	| WhileStatement
 	| IfStatement
 	| ElseStatement
-	| TryCatchStatement;
+	| TryStatement;
 
-export interface TryCatchStatement extends IBlockStatement {
-	kind: BLOCK_TYPE.TRY_CATCH;
-	catchBody: Stmt[];
+export interface TryStatement extends IBlockStatement {
+	kind: BLOCK_TYPE.TRY;
+	catch: CatchStatement;
+	finally?: FinallyStatement;
+}
+export interface CatchStatement extends IBlockStatement {
+	kind: BLOCK_TYPE.CATCH;
 	errorName: string;
+	next?: CatchStatement;
+}
+export interface FinallyStatement extends IBlockStatement {
+	kind: BLOCK_TYPE.FINALLY;
 }
 export interface ClassDeclaration extends IBlockStatement {
 	kind: BLOCK_TYPE.CLASS_DECLARATION;

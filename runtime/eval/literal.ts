@@ -7,19 +7,19 @@ import {
 	NumericLiteral,
 	ObjectLiteral,
 	StringLiteral,
-} from 'agal/frontend/ast.ts';
-import Environment from "agal/runtime/Environment.class.ts";
-import { IStack, evaluate } from "agal/runtime/interpreter.ts";
-import AgalArray from "agal/runtime/values/complex/Array.class.ts";
-import AgalObject from "agal/runtime/values/complex/Object.class.ts";
+} from 'magal/frontend/ast.ts';
+import Environment from "magal/runtime/Environment.class.ts";
+import { IStack, evaluate } from "magal/runtime/interpreter.ts";
+import AgalArray from "magal/runtime/values/complex/Array.class.ts";
+import AgalObject from "magal/runtime/values/complex/Object.class.ts";
 import AgalError, {
 	AgalReferenceError,
 	AgalSyntaxError,
 	AgalTokenizeError,
 AgalTypeError,
-} from "agal/runtime/values/internal/Error.class.ts";
-import AgalNumber from "agal/runtime/values/primitive/Number.class.ts";
-import AgalString from "agal/runtime/values/primitive/String.class.ts";
+} from "magal/runtime/values/internal/Error.class.ts";
+import AgalNumber from "magal/runtime/values/primitive/Number.class.ts";
+import AgalString from "magal/runtime/values/primitive/String.class.ts";
 
 export function identifier(
 	identifier: Identifier,

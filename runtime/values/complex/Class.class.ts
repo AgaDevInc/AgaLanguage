@@ -1,14 +1,14 @@
 import { FOREGROUND, colorize } from 'aga//colors_string/mod.ts';
-import Environment from "agal/runtime/Environment.class.ts";
-import { IStack, evaluate } from "agal/runtime/interpreter.ts";
-import AgalObject from "agal/runtime/values/complex/Object.class.ts";
-import StringGetter from "agal/runtime/values/primitive/String.class.ts";
-import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
-import Properties from "agal/runtime/values/internal/Properties.class.ts";
-import { ClassDeclaration, ClassPropertyExtra } from "agal/frontend/ast.ts";
-import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
-import AgalNull, { AgalVoid } from "agal/runtime/values/primitive/Null.class.ts";
-import AgalError, { AgalTypeError } from "agal/runtime/values/internal/Error.class.ts";
+import Environment from 'magal/runtime/Environment.class.ts';
+import { IStack, evaluate } from 'magal/runtime/interpreter.ts';
+import AgalObject from 'magal/runtime/values/complex/Object.class.ts';
+import StringGetter from 'magal/runtime/values/primitive/String.class.ts';
+import AgalFunction from 'magal/runtime/values/complex/Function.class.ts';
+import Properties from 'magal/runtime/values/internal/Properties.class.ts';
+import { ClassDeclaration, ClassPropertyExtra } from 'magal/frontend/ast.ts';
+import Runtime, { defaultStack } from 'magal/runtime/values/Runtime.class.ts';
+import AgalNull, { AgalVoid } from 'magal/runtime/values/primitive/Null.class.ts';
+import AgalError, { AgalTypeError } from 'magal/runtime/values/internal/Error.class.ts';
 
 const InstanceDefault = new Runtime() as AgalClass;
 InstanceDefault.makeInstance = () => new Properties(Runtime.loadProperties());
@@ -28,7 +28,7 @@ export default class AgalClass extends Runtime {
 		public name: string,
 		properties: PropertiesClass,
 		extendsFrom?: AgalClass,
-		Runtime?: RuntimeConstructor
+		private Runtime?: RuntimeConstructor
 	) {
 		super();
 		this.#extends = extendsFrom || InstanceDefault;
@@ -58,6 +58,13 @@ export default class AgalClass extends Runtime {
 		if (Extends) return Extends;
 		return null;
 	}
+	isInstance(val: Runtime) {
+		if (this.Runtime && val instanceof (this.Runtime as typeof Runtime)) return true;
+		return val.instanceof(this.#instance);
+	}
+	get instance() {
+		return this.#instance;
+	}
 	makeInstance(Runtime?: RuntimeConstructor) {
 		return new Properties(Runtime ? Runtime.loadProperties() : this.#instance);
 	}
@@ -83,13 +90,13 @@ export default class AgalClass extends Runtime {
 			string,
 			{ meta: ClassPropertyExtra[]; value: Runtime | Promise<Runtime> }
 		> = {};
-		for (const method of body){
+		for (const method of body) {
 			const data = await evaluate(method.value!, env, defaultStack);
 			properties[method.identifier] = {
 				meta: [method.extra!],
 				value: data,
 			};
-			if(data instanceof AgalError) return data;
+			if (data instanceof AgalError) return data;
 		}
 		let extendsFrom;
 		const extender = extend ? env.lookupVar(extend, defaultStack, decl) : undefined;
@@ -99,5 +106,9 @@ export default class AgalClass extends Runtime {
 		const data = new AgalClass(identifier, properties, extendsFrom);
 		data.decl = decl;
 		return data;
+	}
+	toConsole(): string {
+		const extendsIn = this.#extends === InstanceDefault ? '' : ` extiende ${this.#extends.name}`;
+		return colorize(`[Agal Clase ${this.name}${extendsIn}]`, FOREGROUND.CYAN);
 	}
 }

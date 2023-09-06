@@ -26,6 +26,7 @@ export default class Application {
 		const flagsList: Flags = {};
 		while (flags.length > 0) {
 			const flag = flags.shift()!;
+			if(argsList.length > 0){ argsList.push(flag);continue; }
 			if (flag.startsWith('--')) {
 				const [name, value] = flag.replace('--', '').split('=');
 				if (!value) flagsList[name] = true;

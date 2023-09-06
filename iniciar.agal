@@ -1,5 +1,12 @@
-def i = 0;
-mien(i<=5){
-  i = i + 1
-  pintar(i)
-}
+const bu = {
+  bus: 7,
+  but: 8,
+};
+const b = {
+  ba: 3,
+  be: 4,
+  bi: 5,
+  bo: 6,
+  bu
+};
+modulo.exporta = b;

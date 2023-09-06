@@ -1,9 +1,11 @@
-import { IStack } from "agal/runtime/interpreter.ts";
-import Environment from "agal/runtime/Environment.class.ts";
-import { defaultStack } from "agal/runtime/values/Runtime.class.ts";
-import { agal, evalLine, getModuleScope } from "agal/runtime/eval.ts";
-import Application, { ApplicationListen } from "agal/Application.class.ts";
-import AgalError, { AgalReferenceError } from "agal/runtime/values/internal/Error.class.ts";
+import type { IStack } from 'magal/runtime/interpreter.ts';
+import type Environment from 'magal/runtime/Environment.class.ts';
+import Application, { ApplicationListen } from 'magal/Application.class.ts';
+import * as agaLanguage from 'magal/index.ts';
+
+const { AgalReferenceError, AgalError } = agaLanguage.runtime.values.internal;
+const { defaultStack } = agaLanguage.runtime.values;
+const { agal, getModuleScope, evalLine } = agaLanguage.runtime;
 
 const version = '1.0.0';
 const name = 'Agal';
@@ -22,10 +24,10 @@ const commands: Record<COMMANDS, Command & { ayuda?: Command }> = {
 	ayuda: {
 		description: 'Muestra la ayuda de los comandos',
 		fn(_command, flags, args) {
-			if(args[0]) {
+			if (args[0]) {
 				const command = commands[args[0] as COMMANDS];
-				if(!command) return console.log(`El comando '${args[0]}' no existe`);
-				if(command.ayuda) return command.ayuda.fn(args[0], flags, args.slice(1));
+				if (!command) return console.log(`El comando '${args[0]}' no existe`);
+				if (command.ayuda) return command.ayuda.fn(args[0], flags, args.slice(1));
 				return console.log(`El comando '${args[0]}' no tiene ayuda`);
 			}
 			console.log('Uso: agal [COMANDO] [OPCIONES]');
@@ -63,7 +65,7 @@ const commands: Record<COMMANDS, Command & { ayuda?: Command }> = {
 			const relativeFile = args.join(' ').trim();
 			const file = relativeFile.includes(':') // is absolute path
 				? relativeFile // Absolute path
-				: `${Deno.cwd()}\\${relativeFile}`;
+				: `${JSRuntime.cwd()}\\${relativeFile}`;
 
 			if (!existFile(file)) {
 				const error = new AgalReferenceError(
@@ -73,7 +75,7 @@ const commands: Record<COMMANDS, Command & { ayuda?: Command }> = {
 				console.error(await error.aConsola());
 				return;
 			}
-			const code = Deno.readTextFileSync(file);
+			const code = await JSRuntime.readFile(file);
 
 			const data = await agal(code, file);
 
@@ -138,16 +140,12 @@ const app = new Application(
 				`El comando '${command}' no existe, usa 'agal ayuda' para ver los comandos disponibles`
 			);
 
-		const relativeFile = args.join(' ').trim();
-		const file = relativeFile.includes(':') // is absolute path
-			? relativeFile // Absolute path
-			: `${Deno.cwd()}\\${relativeFile}`;
 		const { default: InputLoop } = await import('https://deno.land/x/input@2.0.3/index.ts');
 		const input = new InputLoop();
 		console.log(`Bienvenido a ${name} v${version}`);
 		console.log('Para salir usa ctrl+c o salir()');
 		let numberLine = 0;
-		let env: Environment = await getModuleScope(file);
+		let env: Environment = await getModuleScope('<agal>');
 		let stack: IStack = defaultStack;
 		while (true) {
 			const [runtime, scope, _stack] = await evalLine(

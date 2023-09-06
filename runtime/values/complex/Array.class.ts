@@ -1,10 +1,10 @@
 import { colorize, FOREGROUND } from 'aga//colors_string/mod.ts';
-import { IStack } from "agal/runtime/interpreter.ts";
-import parseRuntime from "agal/runtime/values/parse.ts";
-import NumberGetter from "agal/runtime/values/primitive/Number.class.ts";
-import AgalFunction from "agal/runtime/values/complex/Function.class.ts";
-import Properties from "agal/runtime/values/internal/Properties.class.ts";
-import Runtime, { defaultStack } from "agal/runtime/values/Runtime.class.ts";
+import { IStack } from "magal/runtime/interpreter.ts";
+import parseRuntime from "magal/runtime/values/parse.ts";
+import NumberGetter from "magal/runtime/values/primitive/Number.class.ts";
+import AgalFunction from "magal/runtime/values/complex/Function.class.ts";
+import Properties from "magal/runtime/values/internal/Properties.class.ts";
+import Runtime, { defaultStack } from "magal/runtime/values/Runtime.class.ts";
 
 const ArrayProperties = new Properties(Runtime.loadProperties());
 export default class AgalArray extends Runtime {
@@ -74,5 +74,8 @@ export default class AgalArray extends Runtime {
 				).setName('Lista().agregar', defaultStack)
 			);
 		return null;
+	}
+	toConsole(): string {
+		return  colorize('[Agal Lista]', FOREGROUND.CYAN)
 	}
 }
