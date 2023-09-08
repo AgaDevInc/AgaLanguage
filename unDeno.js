@@ -1,15 +1,14 @@
-const { readFile, writeFile, unlink, readdir, mkdir } = require('node:fs/promises');
 const { inspect } = require('node:util');
 // Use in nodejs to replace Deno
 const Deno = {
 	cwd: () => process.cwd(),
-	readTextFile: path => readFile(path, 'utf-8'),
+	readTextFile: _path => 'Text file content',
 	exit: code => process.exit(code),
-	readFile: path => readFile(path).then(buffer => new Uint8Array(buffer)),
-	writeFile: (path, data) => writeFile(path, data),
-	remove: path => unlink(path),
-	readDir: path => readdir(path).map(file => ({ name: file })),
-	mkdir: path => mkdir(path),
+	readFile: _path => Promise.resolve(new Uint8Array()),
+	writeFile: (_path, _data) => {},
+	remove: _path => {},
+	readDir: _path => ['File_1.txt', 'File_2.txt'].map(file => ({ name: file })),
+	mkdir: _path => {},
 	inspect: obj => inspect(obj),
 };
 module.exports = Deno;
