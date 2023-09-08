@@ -17,5 +17,5 @@ export default async function call(call: CallExpr, env: Environment, stack:IStac
     args.push(data);
   }
   
-  return await fn.call((fn as AgalFunction).name,stack, este, ...args);
+  return await fn.call((fn as AgalFunction).name||'nulo',stack, este, ...args);
 }

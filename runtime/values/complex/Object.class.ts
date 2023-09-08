@@ -20,7 +20,7 @@ export default class AgalObject extends Runtime {
 		if (keys.length === 0) return obj + '}';
 		obj += '\n';
 		for (let key of keys) {
-			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = JSRuntime.inspect(key);
+			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
 			const value = await this.get(key, defaultStack);
 			if (value === this) ref = true;
 			const valueStr =
@@ -42,7 +42,7 @@ export default class AgalObject extends Runtime {
 		if (keys.length === 0) return '{}';
 		let obj = '{\n';
 		for (let key of keys) {
-			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = JSRuntime.inspect(key);
+			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
 			const value = this.getSync(key)!;
 			const valueSTR = value === this ? '<ref>' : value instanceof AgalObject ? colorize('[Agal Objeto]', FOREGROUND.CYAN) : value.toConsole();
 			obj += `  ${key}: ${valueSTR.split('\n').join('\n  ')},\n`;

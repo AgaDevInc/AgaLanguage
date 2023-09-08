@@ -94,9 +94,9 @@ export default class AgalFunction extends Runtime {
 		const name = await this.get('nombre');
 		return colorize(`[Función ${name || '<anónima>'}]`, FOREGROUND.CYAN);
 	}
-	setName(name: string, stack: IStack) {
+	setName(name: string, _stack?: IStack) {
 		this.name = name || this.name;
-		this.set('nombre', stack, StringGetter(this.name));
+		this.setSync('nombre', StringGetter(this.name));
 		return this;
 	}
 	static loadProperties(): Properties {

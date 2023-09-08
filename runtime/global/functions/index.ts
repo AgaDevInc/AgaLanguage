@@ -14,7 +14,7 @@ export default async function (
 	_setLocal: (name: string, value: Runtime) => void
 ) {
 	// deno-lint-ignore no-explicit-any
-	setGlobal('salir', new AgalFunction(async () => (globalThis.Deno || (globalThis as any).process).exit(0)), true);
+	setGlobal('salir', new AgalFunction(async () => Deno.exit(0)), true);
 	setGlobal(
 		'analizar',
 		new AgalFunction(async (_name, stack, _este, data) => {

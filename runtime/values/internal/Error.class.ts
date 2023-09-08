@@ -13,6 +13,9 @@ import { AgalNull } from 'magal/runtime/values/primitive/Null.class.ts';
 import StringGetter from 'magal/runtime/values/primitive/String.class.ts';
 import Properties from 'magal/runtime/values/internal/Properties.class.ts';
 
+function resolveArgs(args: Expr[]): string {
+	return args.map((arg) => resolveName(arg)).join(', ');
+}
 function resolveName(expr: Expr): string {
 	if (!expr) return '';
 	switch (expr.kind) {
@@ -21,6 +24,18 @@ function resolveName(expr: Expr): string {
 			return expr.symbol;
 		case 'MemberExpr':
 			return `${resolveName(expr.object)}.${resolveName(expr.property)}`;
+		case 'CallExpr':
+			return `${resolveName(expr.callee)}(${resolveArgs(expr.args)})`;
+		case 'ArrayLiteral':
+			return `[Lista]`;
+		case 'ObjectLiteral':
+			return `{Objeto}`;
+		case 'IterableLiteral':
+			return `...${expr.identifier}`;
+		case 'NumericLiteral':
+			return expr.value + '';
+		case 'StringLiteral':
+			return Deno.inspect(expr.value);
 		default:
 			return '';
 	}

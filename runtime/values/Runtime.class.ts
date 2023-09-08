@@ -32,13 +32,18 @@ export default class Runtime extends Inspecteable {
 		this.#props.set(name, data);
 		return data;
 	}
-	getSync(name: string): Runtime | null {
-		return this.#props.get(name);
-	}
 	protected async _get(name: string): Promise<Runtime | null> {
 		const data = await Promise.resolve(this.#props.get(name));
 		if (data) return data;
 		return await this.type.getProperty(name, this);
+	}
+	setSync<R extends Runtime>(name: string, value: R): R;
+	setSync(name: string, value: Runtime): Runtime;
+	setSync(name: string, value: Runtime): Runtime {
+		return this.#props.set(name, value);
+	}
+	getSync(name: string): Runtime | null {
+		return this.#props.get(name);
 	}
 	async get(name: string, _stack: IStack = defaultStack): Promise<Runtime> {
 		return (await this._get(name)) || AgalNull;

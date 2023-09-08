@@ -29,7 +29,7 @@ export class AgalString extends Primitive {
 		return Promise.resolve(this.value);
 	}
 	_aConsolaEn(): Promise<string> {
-		return Promise.resolve(JSRuntime.inspect(this.value));
+		return Promise.resolve(Deno.inspect(this.value));
 	}
 	static loadProperties() {
 		return StringProperties;
@@ -51,7 +51,7 @@ export class AgalString extends Primitive {
 				}).setName('Cadena().separar', defaultStack)
 			);
 		if (/^[0-9]+$/.test(name)) return StringGetter(este.value[parseInt(name)]);
-		return null;
+		return await super.getProperty(name, este);
 	}
 }
 

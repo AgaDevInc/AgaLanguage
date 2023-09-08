@@ -3,6 +3,7 @@ import type { IStack } from 'magal/runtime/interpreter.ts';
 import type Runtime from 'magal/runtime/values/Runtime.class.ts';
 import AgalObject from 'magal/runtime/values/complex/Object.class.ts';
 import { AgalReferenceError } from 'magal/runtime/values/internal/Error.class.ts';
+import libraries from './libraries/index.ts';
 
 const cache = new Map();
 
@@ -25,11 +26,13 @@ export default async function makeRequire(
 	pathFile: string,
 	stack: IStack
 ): Promise<Runtime> {
-	const folder = await (await modulo.get('ruta')).aCadena() || JSRuntime.cwd();
-	const path = resolve(JSRuntime.resolve(folder,pathFile));
+	if(libraries.has(pathFile)) return libraries.get(pathFile);
+	const ruta = await (await modulo.get('ruta')).aCadena()
+	const folder = ((ruta || Deno.cwd())+'/').replace(/\\/g,'/').replace(/[\/]{1,}/g,'/');
+	const path = resolve(new URL(pathFile,folder).href);
 	if (cache.has(path)) return cache.get(path);
 
-	const file = await JSRuntime.readFile(path).catch(() => null);
+	const file = await Deno.readTextFile(path).catch(() => null);
 	if (file === null)
 		return new AgalReferenceError(
 			`No se pudo encontrar el archivo '${pathFile}' en '${path}'`,

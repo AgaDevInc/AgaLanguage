@@ -882,9 +882,8 @@ export default class Parser {
 
 		return left;
 	}
-	private parse_member_expr() {
+	private parse_member_expr(object = this.parse_primary_expr()) {
 		const { col, row, file } = this.at();
-		let object = this.parse_primary_expr();
 
 		while (this.at().type == TokenType.Dot || this.at().type == TokenType.OpenBracket) {
 			const operator = this.eat();
@@ -946,12 +945,12 @@ export default class Parser {
 			row: callee.row,
 			file: callee.file,
 		} as CallExpr;
-		if (this.at().type == TokenType.OpenParen) call_expr = this.parse_call_expr(call_expr);
+		if (this.at().type == TokenType.OpenParen || this.at().type == TokenType.Dot) call_expr = this.parse_call_member_expr(call_expr);
 
 		return call_expr;
 	}
-	private parse_call_member_expr(): Expr {
-		const member = this.parse_member_expr();
+	private parse_call_member_expr(object?:Expr): Expr {
+		const member = this.parse_member_expr(object);
 
 		if (this.at().type == TokenType.OpenParen) return this.parse_call_expr(member);
 		return member;

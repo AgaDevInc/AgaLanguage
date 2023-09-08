@@ -39,7 +39,7 @@ export async function getModuleScope(path: string): Promise<Environment> {
 
 export async function agal(
 	code: string,
-	path = JSRuntime.cwd() + '/inicio.agal',
+	path = Deno.cwd() + '/inicio.agal',
 	stack = defaultStack
 ) {
 	path = path.replace(/\\/g, '/');
@@ -57,7 +57,7 @@ export async function evalLine(
 	scope?: Environment,
 	stack: IStack = defaultStack
 ): Promise<[Runtime, Environment, IStack]> {
-	scope = scope ?? (await getModuleScope(JSRuntime.cwd() + '/inicio.agal'));
+	scope = scope ?? (await getModuleScope(Deno.cwd() + '/inicio.agal'));
 	const parser = new Parser();
 	const program = parser.produceAST(line, false, `<linea:${lineIndex}>`);
 	const runtime = await evaluate(program.body, scope, stack);

@@ -1,3 +1,1 @@
-const a = requiere('./iniciar.agal');
-pintar(a)
-modulo.exporta = a
+modulo.exporta = requiere('sab').leerArchivo('./test.ts').aCadena()

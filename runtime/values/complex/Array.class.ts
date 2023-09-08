@@ -1,20 +1,17 @@
 import { colorize, FOREGROUND } from 'aga//colors_string/mod.ts';
-import { IStack } from "magal/runtime/interpreter.ts";
-import parseRuntime from "magal/runtime/values/parse.ts";
-import NumberGetter from "magal/runtime/values/primitive/Number.class.ts";
-import AgalFunction from "magal/runtime/values/complex/Function.class.ts";
-import Properties from "magal/runtime/values/internal/Properties.class.ts";
-import Runtime, { defaultStack } from "magal/runtime/values/Runtime.class.ts";
+import { IStack } from 'magal/runtime/interpreter.ts';
+import parseRuntime from 'magal/runtime/values/parse.ts';
+import NumberGetter from 'magal/runtime/values/primitive/Number.class.ts';
+import AgalFunction from 'magal/runtime/values/complex/Function.class.ts';
+import Properties from 'magal/runtime/values/internal/Properties.class.ts';
+import Runtime, { defaultStack } from 'magal/runtime/values/Runtime.class.ts';
 
 const ArrayProperties = new Properties(Runtime.loadProperties());
 export default class AgalArray extends Runtime {
-	get(name: string): Promise<Runtime> {
-		return super.get(name);
-	}
-	async _aCadena(): Promise<string> {
+	protected async _aCadena(): Promise<string> {
 		const endKey = await this.length;
 		const list = [];
-		for (let i = 0; i < endKey; i++) {
+		for (let i = 0; i < endKey && i < 100; i++) {
 			list.push(
 				(await this._get(`${i}`))
 					? await (await this.get(`${i}`)).aConsolaEn()
@@ -23,10 +20,10 @@ export default class AgalArray extends Runtime {
 		}
 		return `[${list.join(', ')}]`;
 	}
-	async _aConsola(): Promise<string> {
+	protected async _aConsola(): Promise<string> {
 		return await this.aCadena();
 	}
-	async _aConsolaEn(): Promise<string> {
+	protected async _aConsolaEn(): Promise<string> {
 		return await colorize('[Lista]', FOREGROUND.CYAN);
 	}
 	protected async _aNumero(): Promise<number> {
@@ -38,20 +35,16 @@ export default class AgalArray extends Runtime {
 		for (let i = 0; i < length; i++) list.push(await this.get(`${i}`));
 		return list;
 	}
-	get length(): Promise<number> {
-		return new Promise(resolve => {
-			(async () => {
-				const length = (await this.keys())
-					.map(k => parseInt(k) ?? -1)
-					.reduce((a, b) => Math.max(a, b), -1);
-				resolve(length + 1);
-			})();
-		});
+	get length(): number {
+		const length = this.keysSync()
+			.map(k => parseInt(k) ?? -1)
+			.reduce((a, b) => Math.max(a, b), -1);
+		return length + 1;
 	}
 	static from(list: unknown[]) {
 		const l = new AgalArray();
 		for (let i = 0; i < list.length; i++)
-			l.set(`${i}`, defaultStack, parseRuntime(defaultStack, list[i]));
+			l.setSync(`${i}`, parseRuntime(defaultStack, list[i]));
 		return l;
 	}
 	static loadProperties(): Properties {
@@ -67,15 +60,15 @@ export default class AgalArray extends Runtime {
 			return await ArrayProperties.set(
 				'agregar',
 				new AgalFunction(
-					async (_name: string, stack: IStack, este: Runtime, ...args: Runtime[]) => {
-						for (let i = 0; i < args.length; i++) await este.set(`${length + i}`, stack, args[i]);
-						return este;
+					(_name: string, _stack: IStack, este: Runtime, ...args: Runtime[]) => {
+						for (let i = 0; i < args.length; i++) este.setSync(`${length + i}`, args[i]);
+						return Promise.resolve(este);
 					}
 				).setName('Lista().agregar', defaultStack)
 			);
-		return null;
+		return super.getProperty(name, este)
 	}
 	toConsole(): string {
-		return  colorize('[Agal Lista]', FOREGROUND.CYAN)
+		return colorize(`[Agal ${this.type.name}]`, FOREGROUND.CYAN);
 	}
 }
