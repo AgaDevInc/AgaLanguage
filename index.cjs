@@ -4376,7 +4376,7 @@ async function makeRequire(modulo, pathFile, stack) {
 }
 const mod4 = {
     AgalArray: AgalArray,
-    AgalaClass: AgalClass,
+    AgalClass: AgalClass,
     AgalFunction: AgalFunction,
     AgalObject: AgalObject,
     parse: parseRuntime
