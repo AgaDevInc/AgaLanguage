@@ -177,6 +177,8 @@ const propsSyn = new Properties(AgalError.loadProperties());
 export class AgalSyntaxError extends AgalError {
 	constructor(message: string, stack: IStack) {
 		super('ErrorSintaxis', message, stack);
+		throw new Error("Error de sintaxis");
+		
 	}
 	static loadProperties(): Properties {
 		return propsSyn;

@@ -1473,12 +1473,15 @@ function isInt(str, bool = true) {
 }
 const toString = function(quote, { col, row }, line) {
     const src = line.split('').slice(col);
+    let strLength = 0;
     let str = '';
     src.shift();
     while(src.length > 0 && src[0] != quote){
-        if (src[0] == '\\') {
-            src.shift();
+        const v = src.shift();
+        strLength++;
+        if (v == '\\') {
             const next = src.shift();
+            strLength++;
             if (next == 'n') str += '\n';
             else if (next == 't') str += '\t';
             else if (next == 'r') str += '\r';
@@ -1487,9 +1490,10 @@ const toString = function(quote, { col, row }, line) {
             else if (next == 'v') str += '\v';
             else if (next == '0') str += '\0';
             else if (next == 'x') {
-                src.shift();
                 const n1 = src.shift();
+                strLength++;
                 const n2 = src.shift();
+                strLength++;
                 const hex = `${n1}${n2}`;
                 if (!n1 || !n2) return [
                     {
@@ -1502,11 +1506,14 @@ const toString = function(quote, { col, row }, line) {
                 ];
                 str += String.fromCharCode(parseInt(hex, 16));
             } else if (next == 'u') {
-                src.shift();
                 const n1 = src.shift();
+                strLength++;
                 const n2 = src.shift();
+                strLength++;
                 const n3 = src.shift();
+                strLength++;
                 const n4 = src.shift();
+                strLength++;
                 const hex = `${n1}${n2}${n3}${n4}`;
                 if (!n1 || !n2 || !n3 || !n4) return [
                     {
@@ -1519,15 +1526,22 @@ const toString = function(quote, { col, row }, line) {
                 ];
                 str += String.fromCharCode(parseInt(hex, 16));
             } else if (next == 'U') {
-                src.shift();
                 const n1 = src.shift();
+                strLength++;
                 const n2 = src.shift();
+                strLength++;
                 const n3 = src.shift();
+                strLength++;
                 const n4 = src.shift();
+                strLength++;
                 const n5 = src.shift();
+                strLength++;
                 const n6 = src.shift();
+                strLength++;
                 const n7 = src.shift();
+                strLength++;
                 const n8 = src.shift();
+                strLength++;
                 const hex = `${n1}${n2}${n3}${n4}${n5}${n6}${n7}${n8}`;
                 if (!n1 || !n2 || !n3 || !n4 || !n5 || !n6 || !n7 || !n8) return [
                     {
@@ -1542,9 +1556,10 @@ const toString = function(quote, { col, row }, line) {
             } else if (next == '\\') str += '\\';
             else if (next == '"') str += '"';
             else if (next == "'") str += "'";
-        } else str += src.shift();
+        } else str += v;
     }
     src.shift();
+    strLength++;
     return [
         {
             type: 'String',
@@ -1552,7 +1567,7 @@ const toString = function(quote, { col, row }, line) {
             col,
             row
         },
-        str.length + 1
+        strLength
     ];
 };
 function tokenize1(sourceCode, file = 'iniciar.agal') {
@@ -2094,6 +2109,13 @@ class Parser1 {
         if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
         const args = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseParen){
+            if (this.at().type === TokenType1.Dot) {
+                const data = this.parse_iterable();
+                if (data.kind === 'Error') return data;
+                args.push(data);
+                if (this.at().type == TokenType1.Comma) this.eat();
+                continue;
+            }
             const data = this.expect(TokenType1.Identifier, 'No se encontro el identificador del argumento');
             if (data.type == TokenType1.Error) return this.makeError(data, ErrorType.ParserError);
             args.push(data.value);
@@ -2163,6 +2185,13 @@ class Parser1 {
         if (prev.type === TokenType1.OpenParen) {
             const args = [];
             while(this.not_eof() && this.at().type != TokenType1.CloseParen){
+                if (this.at().type === TokenType1.Dot) {
+                    const data = this.parse_iterable();
+                    if (data.kind === 'Error') return data;
+                    args.push(data);
+                    if (this.at().type == TokenType1.Comma) this.eat();
+                    continue;
+                }
                 const data = this.expect(TokenType1.Identifier, 'No se encontro el identificador');
                 if (data.type == TokenType1.Error) return this.makeError(data, ErrorType.ParserError);
                 args.push(data.value);
@@ -2631,7 +2660,7 @@ class Parser1 {
                     }
                     return {
                         kind: EXPRESSIONS_TYPE.UNARY_EXPR,
-                        value: this.parse_primary_expr(),
+                        value: this.parse_expr(),
                         operator,
                         col,
                         row,
@@ -2643,6 +2672,16 @@ class Parser1 {
                 return this.makeError(this.eat(), ErrorType.TokenizerError);
             case TokenType1.Dot:
                 return this.parse_iterable();
+            case TokenType1.Negate:
+                this.eat();
+                return {
+                    kind: EXPRESSIONS_TYPE.UNARY_EXPR,
+                    value: this.parse_expr(),
+                    operator: tk.value,
+                    col: tk.col,
+                    row: tk.row,
+                    file: tk.file
+                };
         }
         this.eat();
         return this.makeError({
@@ -2708,8 +2747,10 @@ function parsePrimitive(_stack, value) {
 class Properties {
     #data = {};
     father;
+    v;
     constructor(father){
         this.father = father;
+        this.v = this.#data;
     }
     get data() {
         if (this.father) return {
@@ -2727,7 +2768,7 @@ class Properties {
         let data = null;
         if (!data && this.#data[name] && this.#data[name] instanceof Runtime) data = this.#data[name];
         if (!data && this.father) data = this.father.get(name);
-        return data || null;
+        return data;
     }
     set(name, value) {
         this.#data[name] = value;
@@ -2768,7 +2809,7 @@ class Runtime extends Inspecteable {
         return data;
     }
     async _get(name) {
-        const data = await Promise.resolve(this.#props.get(name));
+        const data = this.#props.get(name);
         if (data) return data;
         return await this.type.getProperty(name, this);
     }
@@ -2904,7 +2945,7 @@ class Environment {
     }
     declareVar(name, stack, value, data) {
         if (!name) return new AgalReferenceError(`No se puede declara una variable sin nombre`, stack).throw();
-        if (this.isKeyword(name)) return new AgalReferenceError(`Variable '${name}' es una palabra reservada y no puede ser declarara`, stack).throw();
+        if (this.isKeyword(name) && !data.keyword) return new AgalReferenceError(`Variable '${name}' es una palabra reservada y no puede ser declarara`, stack).throw();
         else if (this.variables.has(name)) return new AgalReferenceError(`Variable '${name}' ya ha sido declarada`, stack).throw();
         if (data.constant) this.constants.add(name);
         if (data.keyword) this.keywords.add(name);
@@ -2970,6 +3011,7 @@ class AgalFunction extends Runtime {
         this.vars.forEach((value, key)=>env.declareVar(key, stack, value, this.decl));
         env.declareVar('este', stack, este, {
             keyword: true,
+            constant: true,
             col: this.decl.col,
             row: this.decl.row
         });
@@ -2981,7 +3023,7 @@ class AgalFunction extends Runtime {
                 env.declareVar(param.identifier, stack, value, this.decl);
                 return rest.push(value);
             }
-            env.declareVar(param, stack, value, this.decl);
+            env.declareVar(param, stack, value || __default, this.decl);
         });
         return evaluate(this.decl.body, env, stack) || AgalVoid;
     }
@@ -3067,13 +3109,31 @@ class AgalArray extends Runtime {
             for(let i = 0; i < args.length; i++)este.setSync(`${length + i}`, args[i]);
             return Promise.resolve(este);
         }).setName('Lista().agregar', defaultStack));
+        if (name === 'empujar') return await ArrayProperties.set('empujar', new AgalFunction((_name, _stack, este, ...args)=>{
+            const argsLength = args.length;
+            for(let i = 1; i <= length; i++)este.setSync(`${length + argsLength - i}`, este.getSync(`${length - i}`));
+            for(let i = 0; i < argsLength; i++)este.setSync(`${i}`, args[i]);
+            return Promise.resolve(este);
+        }).setName('Lista().empujar', defaultStack));
         return super.getProperty(name, este);
     }
     toConsole() {
         return colorize(`[Agal ${this.type.name}]`, FOREGROUND.CYAN);
     }
+    iter() {
+        const self = this;
+        return {
+            [Symbol.iterator]: function*() {
+                const length = self.length;
+                for(let i = 0; i < length; i++)yield self.getSync(`${i}`);
+            }
+        };
+    }
 }
 const props = new Properties(Runtime.loadProperties());
+const noloaded = {
+    aConsolaEn: ()=>Promise.resolve(colorize('[No visible]', FOREGROUND.RED))
+};
 class AgalObject extends Runtime {
     static from(obj, stack) {
         const o = new AgalObject();
@@ -3085,12 +3145,12 @@ class AgalObject extends Runtime {
     async _aConsola() {
         let ref = false;
         let obj = '{';
-        const keys = await this.keys();
+        const keys = this.keysSync();
         if (keys.length === 0) return obj + '}';
         obj += '\n';
         for (let key of keys){
             if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
-            const value = await this.get(key, defaultStack);
+            const value = this.getSync(key) ?? noloaded;
             if (value === this) ref = true;
             const valueStr = value === this ? colorize('<ref>', FOREGROUND.CYAN) : await value.aConsolaEn();
             obj += `  ${key}: ${valueStr},\n`;
@@ -3107,11 +3167,12 @@ class AgalObject extends Runtime {
     }
     toConsole() {
         const keys = this.keysSync();
-        if (keys.length === 0) return '{}';
+        if (keys.length === 0) return colorize('[Agal Objeto ' + colorize('{}', FOREGROUND.WHITE) + ']', FOREGROUND.CYAN);
         let obj = '{\n';
         for (let key of keys){
             if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
             const value = this.getSync(key);
+            if (!value) continue;
             const valueSTR = value === this ? '<ref>' : value instanceof AgalObject ? colorize('[Agal Objeto]', FOREGROUND.CYAN) : value.toConsole();
             obj += `  ${key}: ${valueSTR.split('\n').join('\n  ')},\n`;
         }
@@ -3173,7 +3234,7 @@ async function evaluate(astNode, env, Stack) {
             if (node.kind === 'ReturnStatement') return result;
             if (result instanceof AgalError) return result;
         }
-        return result ? result : AgalVoid;
+        return AgalVoid;
     }
     const stack = astNode === Stack.value ? Stack : {
         value: astNode,
@@ -3527,6 +3588,7 @@ const propsSyn = new Properties(AgalError.loadProperties());
 class AgalSyntaxError extends AgalError {
     constructor(message, stack){
         super('ErrorSintaxis', message, stack);
+        throw new Error("Error de sintaxis");
     }
     static loadProperties() {
         return propsSyn;
@@ -3770,7 +3832,7 @@ async function binary_string(stack, left, operator, right) {
     if (isLikeNumber(right)) return string_number(left, operator, right);
     return new AgalTypeError(`'cadena ${operator} ${typeof right}' no es valido`, stack).throw();
 }
-InstanceDefault.makeInstance = ()=>new Properties(Runtime.loadProperties());
+InstanceDefault.makeInstance = (r)=>new Properties(r ? r.loadProperties() : Runtime.loadProperties());
 InstanceDefault.getConstructor = ()=>Promise.resolve(null);
 class AgalClass extends Runtime {
     name;
@@ -3793,8 +3855,8 @@ class AgalClass extends Runtime {
             if (key === 'constructor') v.then((v)=>this.#instance.set(key, v)).then((v)=>this._set(key, v));
             else {
                 const super_ = this.#instance.father ? new AgalObject().setProperties(this.#instance.father) : __default;
-                v = v.then((v)=>v instanceof AgalFunction ? v.setVar('super', super_) : v);
-                if (meta.includes(ClassPropertyExtra.Static)) v.then((v)=>this._set(key, v));
+                v = Promise.resolve(v.then((v)=>v instanceof AgalFunction ? v.setVar('super', super_) : v));
+                if (meta.includes(ClassPropertyExtra.Static)) this._set(key, v);
                 else v.then((v)=>this.#instance.set(key, v));
             }
         }
@@ -3820,10 +3882,11 @@ class AgalClass extends Runtime {
     }
     async call(name, stack, _este, ..._args) {
         const constructor = await this.getConstructor();
-        const Instance = new AgalObject().setProperties(this.makeInstance());
+        const data = this.makeInstance();
+        const Instance = new AgalObject().setProperties(data);
         if (constructor) {
             const res = await constructor.call(name, stack, Instance, ..._args);
-            if (res !== AgalVoid) return res;
+            if (res instanceof Runtime && res !== AgalVoid) return res;
         }
         return Instance;
     }
@@ -3839,6 +3902,7 @@ class AgalClass extends Runtime {
         const properties = {};
         for (const method of body){
             const data = await evaluate(method.value, env, defaultStack);
+            if (data instanceof AgalFunction) data.setName(`${identifier}.${method.identifier}`);
             properties[method.identifier] = {
                 meta: [
                     method.extra
@@ -3992,7 +4056,9 @@ class Libraries {
     }
     get(name) {
         if (!this._instances.has(name) && this._makers.has(name)) {
-            this._instances.set(name, this._makers.get(name)());
+            const data = this._makers.get(name)();
+            this._instances.set(name, data);
+            Promise.resolve(data).then((data)=>this._instances.set(name, data));
         }
         return this._instances.get(name) || __default;
     }
@@ -4026,7 +4092,9 @@ class AgalIntArray extends AgalArray {
     }
     static from(list) {
         const l = new AgalIntArray();
-        for(let i = 0; i < list.length; i++)l.setSync(`${i}`, NumberGetter(list[i]));
+        for(let i = 0; i < list.length; i++){
+            l.setSync(`${i}`, NumberGetter(list[i]));
+        }
         return l;
     }
     [Symbol.iterator] = function*() {
@@ -4054,8 +4122,10 @@ function ListaEnteros() {
                 return l;
             })
         },
-        from: {
-            meta: [],
+        desde: {
+            meta: [
+                ClassPropertyExtra.Static
+            ],
             value: AgalFunction.from(async function(_name, stack, _este, cadena) {
                 const l = new AgalIntArray();
                 if (!cadena) return l;
@@ -4067,23 +4137,369 @@ function ListaEnteros() {
                     l.setSync(`${i}`, NumberGetter(data.charCodeAt(i)));
                 }
                 return l;
-            })
+            }).setName('ListaEnteros.desde')
         }
     }, undefined, AgalIntArray);
+}
+globalThis.AgalRequestCache ??= 'forzar-cache';
+const AgalResponseProperties = new Properties(Runtime.loadProperties());
+const defaultInt = new AgalIntArray();
+class AgalResponse extends Runtime {
+    body = defaultInt;
+    constructor(){
+        super();
+        this.setSync('estatus', NumberGetter(200));
+        this.setSync('cabeceras', new AgalObject());
+        this.setSync('url', StringGetter(''));
+    }
+    toString() {
+        return `[Respuesta ${this.getSync('estatus').value.toString()}]`;
+    }
+    async set(_name, stack) {
+        return new AgalTypeError('No se puede modificar una respuesta', stack).throw();
+    }
+    _aCadena() {
+        return Promise.resolve(this.toString());
+    }
+    async _aConsola() {
+        return colorize(await this.aCadena(), FOREGROUND.CYAN);
+    }
+    static from(_stack, data, options, url) {
+        const res = new AgalResponse();
+        res.body = AgalIntArray.from(data instanceof Uint8Array ? data : data.split('').map((c)=>c.charCodeAt(0)));
+        if (options?.status && typeof options.status === 'number') res.setSync('estatus', NumberGetter(options.status));
+        if (options?.headers && typeof options.headers === 'object') {
+            const headers = res.getSync('cabeceras');
+            Object.entries(options.headers).forEach(([key, value])=>{
+                headers.setSync(key, StringGetter(value));
+            });
+        }
+        if (url && typeof url === 'string') res.setSync('url', StringGetter(url));
+        return res;
+    }
+    static loadProperties() {
+        return AgalResponseProperties;
+    }
+    static async getProperty(name, este) {
+        if (name === 'json') {
+            return AgalResponseProperties.set('json', AgalFunction.from(async function json(_name, stack, _este) {
+                const cuerpo = este.body;
+                if (!(cuerpo instanceof AgalIntArray)) return new AgalTypeError('Cuerpo invalido', stack).throw();
+                const data = await cuerpo.aCadena();
+                try {
+                    return parseRuntime(stack, JSON.parse(data));
+                } catch (_e) {
+                    return new AgalTypeError('El cuerpo no se pudo leer como json', stack);
+                }
+            }));
+        }
+        if (name === 'texto') {
+            return AgalResponseProperties.set('texto', AgalFunction.from(async function texto(_name, stack, _este) {
+                const cuerpo = este.body;
+                if (!(cuerpo instanceof AgalIntArray)) return new AgalTypeError('Cuerpo invalido', stack).throw();
+                return StringGetter(await cuerpo.aCadena());
+            }));
+        }
+        if (name === 'cuerpo') {
+            return AgalResponseProperties.set('cuerpo', AgalFunction.from(async function cuerpo(_name, _stack, _este) {
+                return este.body;
+            }));
+        }
+        return super.getProperty(name, este);
+    }
+    toResponse() {
+        const body = this.body;
+        if (!(body instanceof AgalIntArray)) throw new Error('Cuerpo invalido');
+        const data = new Uint8Array(body);
+        const cabeceras = this.getSync('cabeceras');
+        const headers = Object.fromEntries(cabeceras.keysSync().map((key)=>{
+            const value = cabeceras.getSync(key);
+            if (!(value instanceof AgalString)) throw new Error('Cabecera invalida');
+            return [
+                key,
+                value.value
+            ];
+        }));
+        const estatus = this.getSync('estatus');
+        if (!(estatus instanceof AgalNumber)) throw new Error('Cuerpo invalido');
+        return new Response(data, {
+            status: Number(estatus.value.toString()),
+            headers
+        });
+    }
+}
+const METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE',
+    'PATCH',
+    'HEAD',
+    'OPTIONS'
+];
+class AgalRequest extends Runtime {
+    cache = 'por-defecto';
+    constructor(){
+        super();
+        const cabeceras = new AgalObject();
+        cabeceras.setSync('user-agent', StringGetter(`Agal/${Agal.versions.agal} (Deno/${Deno.version.deno})`));
+        this.setSync('url', StringGetter(''));
+        this.setSync('cabeceras', cabeceras);
+        this.setSync('metodo', StringGetter('GET'));
+    }
+    toString() {
+        return `[Peticion ${this.getSync('metodo').value.toString()}]`;
+    }
+    _aCadena() {
+        return Promise.resolve(this.toString());
+    }
+    async set(_name, stack) {
+        return new AgalTypeError('No se puede modificar una peticion', stack).throw();
+    }
+    static from(stack, url, options) {
+        const req = new AgalRequest();
+        req.setSync('url', StringGetter(url));
+        if (!options) return req;
+        if (options.method && typeof options.method === 'string') {
+            if (!METHODS.includes(options.method)) return new AgalTypeError(`Metodo "${options.method}" invalido`, stack).throw();
+            req.setSync('metodo', StringGetter(options.method));
+        } else options.method = 'GET';
+        if (options.body && (typeof options.body === 'string' || options.body instanceof Uint8Array)) {
+            if (options.method === 'GET') return new AgalTypeError(`No se puede enviar un cuerpo con el metodo ${options.method}`, stack).throw();
+            req.setSync('cuerpo', AgalIntArray.from(options.body instanceof Uint8Array ? options.body : options.body.split('').map((c)=>c.charCodeAt(0))));
+        }
+        if (options.cache && typeof options.cache === 'string') {
+            if (!AgalRequest.getCache(options.cache)) return new AgalTypeError(`Cache "${options.cache}" invalido`, stack).throw();
+            req.cache = options.cache;
+        }
+        if (options.headers && typeof options.headers === 'object') {
+            const cabeceras = req.getSync('cabeceras');
+            options.headers['user-agent'] ??= `Agal/${Agal.versions.agal} (Deno/${Deno.version.deno})`;
+            Object.entries(options.headers).forEach(([key, value])=>cabeceras.setSync(key, StringGetter(value)));
+        }
+        return req;
+    }
+    static async fromRequest(request) {
+        const req = new AgalRequest();
+        req.setSync('url', StringGetter(request.url));
+        req.setSync('metodo', StringGetter(request.method));
+        const body = await request.arrayBuffer();
+        if (body.byteLength) req.setSync('cuerpo', AgalIntArray.from(new Uint8Array(body)));
+        const cabeceras = req.getSync('cabeceras');
+        for (const [key, value] of request.headers.entries())cabeceras.setSync(key, StringGetter(value));
+        return req;
+    }
+    toRequest() {
+        const url = this.getSync('url');
+        const metodo = this.getSync('metodo');
+        const cuerpo = this.getSync('cuerpo');
+        const cabeceras = this.getSync('cabeceras');
+        const URL1 = url.value;
+        const METHOD = metodo.value;
+        const BODY = cuerpo && new Uint8Array(cuerpo);
+        const HEADERS = Object.fromEntries(cabeceras.keysSync().map((key)=>{
+            const value = cabeceras.getSync(key);
+            return [
+                key,
+                value.value
+            ];
+        }));
+        return new Request(URL1, {
+            method: METHOD,
+            cache: 'no-store',
+            headers: HEADERS,
+            body: BODY
+        });
+    }
+    static getCache(cache) {
+        switch(cache){
+            case 'por-defecto':
+                if (globalThis.AgalRequestCache !== 'por-defecto') return this.getCache(globalThis.AgalRequestCache);
+                return 'default';
+            case 'sin-guardar':
+                return 'no-store';
+            case 'recargar':
+                return 'reload';
+            case 'sin-cache':
+                return 'no-cache';
+            case 'solo-cache':
+                return 'only-if-cached';
+            case 'forzar-cache':
+                return 'force-cache';
+        }
+    }
+}
+function clases(mod) {
+    mod.setSync('Respuesta', new AgalClass('Respuesta', {
+        constructor: {
+            meta: [],
+            value: AgalFunction.from(async function constructor(_name, stack, _este, cuerpo, options) {
+                const res = new AgalResponse();
+                if (!(cuerpo instanceof AgalIntArray)) return new AgalTypeError('Se esperaba un arreglo de enteros', stack).throw();
+                res.body = cuerpo;
+                if (options) {
+                    if (!(options instanceof AgalObject)) return new AgalTypeError('Se esperaba un objeto', stack).throw();
+                    const estatus = await options.get('estatus');
+                    if (estatus) {
+                        if (!(estatus instanceof AgalNumber)) return new AgalTypeError('El estatus debe ser un numero', stack).throw();
+                        const n = Number(estatus.value.toString()) || 0;
+                        if (!n || Number.isInteger(n)) return new AgalTypeError('El estatus debe ser un numero Real Entero', stack).throw();
+                        if (n <= 100 || n >= 599) return new AgalTypeError('El estatus debe ser un numero entre 100 y 599', stack).throw();
+                        res.setSync('estatus', estatus);
+                    }
+                    const cabeceras = await options.get('cabeceras');
+                    if (cabeceras) {
+                        if (!(cabeceras instanceof AgalObject)) return new AgalTypeError('Se esperaba un objeto', stack).throw();
+                        cabeceras.keysSync().forEach((key)=>{
+                            const value = cabeceras.getSync(key);
+                            if (!(value instanceof AgalString)) return new AgalTypeError('Se esperaba una cadena', stack).throw();
+                            res.getSync('cabeceras').setSync(key, value);
+                        });
+                    }
+                }
+                return res;
+            })
+        }
+    }, undefined, AgalResponse));
+    mod.setSync('Peticion', new AgalClass('Peticion', {
+        constructor: {
+            meta: [],
+            value: AgalFunction.from(async function constructor(_name, stack, _este, URL1, options) {
+                if (URL1 instanceof AgalString) {
+                    const url = URL1.value.toString();
+                    const opts = {};
+                    if (options instanceof AgalObject) {
+                        const metodo = options.getSync('metodo');
+                        opts.method = metodo?.value;
+                        const cuerpo = options.getSync('cuerpo');
+                        opts.body = cuerpo instanceof AgalIntArray ? new Uint8Array(cuerpo) : cuerpo?.value;
+                        const cabeceras = options.getSync('cabeceras');
+                        opts.headers = cabeceras?.keysSync().reduce((headers, key)=>{
+                            const value = cabeceras.getSync(key);
+                            headers[key] = value.value;
+                            return headers;
+                        }, {});
+                        const cache = options.getSync('cache');
+                        opts.cache = cache?.value;
+                    }
+                    URL1 = AgalRequest.from(stack, url, opts);
+                }
+                if (!(URL1 instanceof AgalRequest)) return new AgalTypeError('Se esperaba una cadena o un objeto', stack).throw();
+                return URL1;
+            })
+        }
+    }, undefined, AgalRequest));
+}
+function client(mod) {
+    const cached = new Map();
+    const USE_CACHE_TYPES = [
+        'forzar-cache',
+        'solo-cache'
+    ];
+    const LOAD_CACHE_TYPES = [
+        'forzar-cache',
+        'recargar',
+        'sin-cache'
+    ];
+    const cliente = AgalFunction.from(async function cliente(_name, stack, _este, URL1, options) {
+        if (URL1 instanceof AgalString) {
+            const url = URL1.value.toString();
+            const opts = {};
+            if (options instanceof AgalObject) {
+                const metodo = options.getSync('metodo');
+                opts.method = metodo?.value;
+                const cuerpo = options.getSync('cuerpo');
+                opts.body = cuerpo instanceof AgalIntArray ? new Uint8Array(cuerpo) : cuerpo?.value;
+                const cabeceras = options.getSync('cabeceras');
+                opts.headers = cabeceras?.keysSync().reduce((headers, key)=>{
+                    const value = cabeceras.getSync(key);
+                    headers[key] = value.value;
+                    return headers;
+                }, {});
+                const cache = options.getSync('cache');
+                opts.cache = cache?.value;
+            }
+            URL1 = AgalRequest.from(stack, url, opts);
+        }
+        if (!(URL1 instanceof AgalRequest)) return new AgalTypeError('Se esperaba una cadena o un objeto', stack).throw();
+        const cacheType = URL1.cache === 'por-defecto' ? globalThis.AgalRequestCache : URL1.cache;
+        const request = URL1.toRequest();
+        if (USE_CACHE_TYPES.includes(cacheType)) {
+            const cachedResponse = cached.get(request.url);
+            if (cachedResponse) return cachedResponse;
+        }
+        if (cacheType === 'solo-cache') return new AgalTypeError(`No funciono la peticion a '${request.url}'`, stack).throw();
+        const netAccess = await Agal.Permissions.get('NET', request.url);
+        if (netAccess === false) return new AgalTypeError(`No se puede acceder a '${request.url}'`, stack).throw();
+        const response = await Agal.fetch(request).catch(()=>null);
+        if (!response) return new AgalTypeError(`No se pudo conectar a '${request.url}' con el metodo '${request.method}'`, stack).throw();
+        const data = AgalResponse.from(stack, new Uint8Array(await response.arrayBuffer()), {
+            status: response.status,
+            headers: Object.fromEntries(response.headers.entries())
+        }, request.url);
+        if (LOAD_CACHE_TYPES.includes(cacheType)) cached.set(request.url, data);
+        return data;
+    });
+    mod.setSync('cliente', cliente);
+}
+function server(mod) {
+    async function serveHttp(conn, listen, callback) {
+        const httpConn = Deno.serveHttp(conn);
+        for await (const requestEvent of httpConn)requestEvent.respondWith(callback(requestEvent.request, listen));
+    }
+    async function listen(port, callback) {
+        const listener = Deno.listen({
+            port
+        });
+        for await (const conn of listener)serveHttp(conn, listener, callback);
+    }
+    mod.setSync('servidor', AgalFunction.from(async function servidor(_name, stack, este, puerto, funcion, error) {
+        if (!(puerto instanceof AgalNumber)) return new AgalTypeError('Se esperaba un numero', stack).throw();
+        const port = Number(puerto.value.toString());
+        if (!port || !Number.isInteger(port)) return new AgalTypeError('El puerto debe ser un numero natural', stack).throw();
+        if (port <= 0 || port >= 65536) return new AgalTypeError('El puerto debe ser un numero entre 1 y 65535', stack).throw();
+        if (!(funcion instanceof AgalFunction)) return new AgalTypeError('Se esperaba una funcion para el segundo parametro', stack).throw();
+        if (!(error instanceof AgalFunction)) return new AgalTypeError('Se esperaba una funcion para el tercer parametro', stack).throw();
+        listen(port, async (request, listen)=>{
+            const req = await AgalRequest.fromRequest(request);
+            const res = await funcion.call('funcion', stack, este, req);
+            if (res instanceof AgalError && res.throwed) {
+                res.throwed = false;
+                const resE = await error.call('error', stack, este, res);
+                if (resE instanceof AgalResponse) return resE.toResponse();
+                try {
+                    listen.close();
+                } catch (_) {
+                    null;
+                }
+            }
+            if (!(res instanceof AgalResponse)) return new Response('No se pudo procesar la peticion', {
+                status: 500
+            });
+            return res.toResponse();
+        });
+    }));
+}
+function http() {
+    const mod = new AgalObject();
+    clases(mod);
+    client(mod);
+    server(mod);
+    return mod;
 }
 function Permisos() {
     const obj = new AgalObject();
     obj.setSync('quitar', AgalFunction.from(async (_name, stack, _este, permiso, data)=>{
         if (permiso instanceof AgalString) {
-            if (!data) permisos.delete(permiso.value);
-            else if (data instanceof AgalString) permisos.delete(permiso.value, data.value);
+            if (!data) Agal.Permissions.delete(permiso.value);
+            else if (data instanceof AgalString) Agal.Permissions.delete(permiso.value, data.value);
             else return new AgalTypeError('Se esperaba una cadena en el dato', stack).throw();
         } else return new AgalTypeError('Se esperaba una cadena en el permiso', stack).throw();
     }));
     obj.setSync('pedir', AgalFunction.from(async (_name, stack, _este, permiso, data)=>{
         if (permiso instanceof AgalString) {
-            if (!data) await permisos.get(permiso.value);
-            else if (data instanceof AgalString) await permisos.get(permiso.value, data.value);
+            if (!data) await Agal.Permissions.get(permiso.value);
+            else if (data instanceof AgalString) await Agal.Permissions.get(permiso.value, data.value);
             else return new AgalTypeError('Se esperaba una cadena en el dato', stack).throw();
         } else return new AgalTypeError('Se esperaba una cadena en el permiso', stack).throw();
     }));
@@ -4092,7 +4508,7 @@ function Permisos() {
 function FileFunctions(mod) {
     const leerArchivo = AgalFunction.from(async (_name, _stack, _este, archivo)=>{
         if (archivo instanceof AgalString) {
-            const file = await permisos.get('LEER', archivo.value) ? await Deno.readFile(archivo.value).catch(()=>null) : null;
+            const file = await Agal.Permissions.get('LEER', archivo.value) ? await Deno.readFile(archivo.value).catch(()=>null) : null;
             if (file === null) return new AgalReferenceError(`No se pudo encontrar el archivo '${archivo.value}'`, _stack).throw();
             return AgalIntArray.from(file);
         } else return new AgalTypeError('El archivo debe ser una cadena', _stack).throw();
@@ -4101,7 +4517,7 @@ function FileFunctions(mod) {
     const crearArchivo = AgalFunction.from(async (_name, _stack, _este, archivo, datos)=>{
         if (archivo instanceof AgalString) {
             if (datos instanceof AgalIntArray) {
-                const data = await permisos.get('CREAR', archivo.value) ? await Deno.writeFile(archivo.value, new Uint8Array(datos)).catch(()=>null) : false;
+                const data = await Agal.Permissions.get('CREAR', archivo.value) ? await Deno.writeFile(archivo.value, new Uint8Array(datos)).catch(()=>null) : false;
                 if (data === null) return new AgalReferenceError(`No se pudo crear el archivo '${archivo.value}'`, _stack).throw();
                 return datos;
             } else return new AgalTypeError('Los datos deben ser un ListaEnteros', _stack).throw();
@@ -4118,7 +4534,7 @@ async function readDir(path) {
 function FolderFunctions(mod) {
     const leerCarpeta = AgalFunction.from(async (_name, _stack, _este, carpeta)=>{
         if (carpeta instanceof AgalString) {
-            const data = await permisos.get('LEER', carpeta.value) ? await readDir(carpeta.value).catch(()=>null) : null;
+            const data = await Agal.Permissions.get('LEER', carpeta.value) ? await readDir(carpeta.value).catch(()=>null) : null;
             if (data === null) return new AgalReferenceError(`No se pudo leer la carpeta '${carpeta.value}'`, _stack).throw();
             return AgalIntArray.from(data);
         } else return new AgalTypeError('La carpeta debe ser una cadena', _stack).throw();
@@ -4126,7 +4542,7 @@ function FolderFunctions(mod) {
     mod.setSync('leerCarpeta', leerCarpeta);
     const crearCarpeta = AgalFunction.from(async (_name, _stack, _este, carpeta)=>{
         if (carpeta instanceof AgalString) {
-            const data = await permisos.get('CREAR', carpeta.value) ? await Deno.mkdir(carpeta.value).catch(()=>null) : false;
+            const data = await Agal.Permissions.get('CREAR', carpeta.value) ? await Deno.mkdir(carpeta.value).catch(()=>null) : false;
             if (data === null) return new AgalReferenceError(`No se pudo crear la carpeta '${carpeta.value}'`, _stack).throw();
             return AgalIntArray.from(data);
         } else return new AgalTypeError('La carpeta debe ser una cadena', _stack).throw();
@@ -4139,7 +4555,7 @@ function sab() {
     FolderFunctions(mod);
     const borrar = AgalFunction.from(async (_name, _stack, _este, archivo)=>{
         if (archivo instanceof AgalString) {
-            const data = await permisos.get('BORRAR', archivo.value) ? await Deno.remove(archivo.value).catch(()=>null) : false;
+            const data = await Agal.Permissions.get('BORRAR', archivo.value) ? await Deno.remove(archivo.value).catch(()=>null) : false;
             if (data === null) return new AgalReferenceError(`No se pudo borrar '${archivo.value}'`, _stack).throw();
             return AgalIntArray.from(data);
         } else return new AgalTypeError('La ruta debe ser una cadena', _stack).throw();
@@ -4147,10 +4563,52 @@ function sab() {
     mod.setSync('borrar', borrar);
     return mod;
 }
+class AgalEvents extends Runtime {
+    #events = {};
+    constructor(){
+        super();
+        this.setSync('en', AgalFunction.from(async (_name, _stack, _este, evento, funcion)=>{
+            if (!evento) return new AgalTypeError('Se esperaba un evento pero se recibió nada', _stack);
+            if (!(evento instanceof AgalString)) return new AgalTypeError('El evento debe ser una cadena', _stack);
+            if (!funcion) return new AgalTypeError('Se esperaba una función pero se recibió nada', _stack);
+            if (!(funcion instanceof AgalFunction)) return new AgalTypeError('La función debe ser una función', _stack);
+            if (!this.#events[evento.value]) this.#events[evento.value] = [];
+            this.#events[evento.value].push(funcion);
+        }));
+        this.setSync('emitir', AgalFunction.from(async (name, stack, este, evento, ...args)=>{
+            if (!evento) return new AgalTypeError('Se esperaba un evento pero se recibió nada', stack);
+            if (!(evento instanceof AgalString)) return new AgalTypeError('El evento debe ser una cadena', stack);
+            if (!this.#events[evento.value]) return;
+            for(let i = 0; i < this.#events[evento.value].length; i++){
+                this.#events[evento.value][i].call(name, stack, este, ...args);
+            }
+        }));
+    }
+    emit(evento, ...args) {
+        if (!this.#events[evento]) return;
+        const AgalArgs = parseComplex(defaultStack, args).iter();
+        for(let i = 0; i < this.#events[evento].length; i++)this.#events[evento][i].call('emit', defaultStack, this, ...AgalArgs);
+    }
+    on(evento, funcion) {
+        if (!this.#events[evento]) this.#events[evento] = [];
+        this.#events[evento].push(funcion);
+    }
+}
+function Eventos() {
+    return new AgalClass('Eventos', {
+        constructor: {
+            meta: [],
+            value: AgalFunction.from(async ()=>new AgalEvents())
+        }
+    });
+}
 __default4.set('ListaEnteros', ListaEnteros);
 __default4.set('permisos', Permisos);
 __default4.set('sab', sab);
+__default4.set('http', http);
+__default4.set('Eventos', Eventos);
 const mod2 = {
+    AgalResponse: AgalResponse,
     AgalIntArray: AgalIntArray,
     default: __default4
 };
@@ -4436,6 +4894,7 @@ class PermissionManager {
             if (typeof this.permissions['TODO'][data] === 'boolean') return this.permissions['TODO'][data];
             if (typeof this.permissions['TODO'][this.all] === 'boolean') return this.permissions['TODO'][this.all];
         }
+        return null;
     }
     delete(permission, data = this.all) {
         if (this.permissions[permission]) {
@@ -4466,7 +4925,19 @@ class PermissionManager {
         this.permissions[permission][data] = false;
     }
 }
-globalThis.permisos = new PermissionManager();
+globalThis.Agal = {
+    Permissions: new PermissionManager(),
+    versions: {
+        agal: '0.1.0',
+        deno: Deno.version.deno
+    },
+    fetch: (url, options)=>{
+        if (Deno.version.v8) return fetch(url, options);
+        return new Promise((resolve)=>{
+            resolve(new Response(''));
+        });
+    }
+};
 exports.frontend = mod;
 exports.runtime = mod8;
 return exports

@@ -38,7 +38,6 @@ export async function _function(
 }
 export async function _class(classDecl: ClassDeclaration, env:Environment, stack:IStack) {
 	const { identifier, col, row } = classDecl;
-
 	const func = await AgalClass.from(classDecl, env);
 	if(func instanceof AgalError) return func;
 	return env.declareVar(identifier, stack, func, { col, row, constant: true });

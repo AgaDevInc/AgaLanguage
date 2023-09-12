@@ -98,12 +98,13 @@ function isInt(str: string, bool = true) {
 
 const toString: TokenCallback = function (quote, { col, row }, line) {
 	const src = line.split('').slice(col);
+	let strLength = 0;
 	let str = '';
 	src.shift();
 	while (src.length > 0 && src[0] != quote) {
-		if (src[0] == '\\') {
-			src.shift();
-			const next = src.shift();
+		const v = src.shift(); strLength++;
+		if (v == '\\') {
+			const next = src.shift(); strLength++;
 			if (next == 'n') str += '\n';
 			else if (next == 't') str += '\t';
 			else if (next == 'r') str += '\r';
@@ -112,9 +113,8 @@ const toString: TokenCallback = function (quote, { col, row }, line) {
 			else if (next == 'v') str += '\v';
 			else if (next == '0') str += '\0';
 			else if (next == 'x') {
-				src.shift();
-				const n1 = src.shift();
-				const n2 = src.shift();
+				const n1 = src.shift(); strLength++;
+				const n2 = src.shift(); strLength++;
 				const hex = `${n1}${n2}`;
 				if (!n1 || !n2)
 					return [{
@@ -124,11 +124,10 @@ const toString: TokenCallback = function (quote, { col, row }, line) {
 				row,}, 2]
 				str += String.fromCharCode(parseInt(hex, 16));
 			} else if (next == 'u') {
-				src.shift();
-				const n1 = src.shift();
-				const n2 = src.shift();
-				const n3 = src.shift();
-				const n4 = src.shift();
+				const n1 = src.shift(); strLength++;
+				const n2 = src.shift(); strLength++
+				const n3 = src.shift(); strLength++
+				const n4 = src.shift(); strLength++
 				const hex = `${n1}${n2}${n3}${n4}`;
 				if (!n1 || !n2 || !n3 || !n4)
 				return [{
@@ -138,15 +137,14 @@ const toString: TokenCallback = function (quote, { col, row }, line) {
 					row,}, 4]
 				str += String.fromCharCode(parseInt(hex, 16));
 			} else if (next == 'U') {
-				src.shift();
-				const n1 = src.shift();
-				const n2 = src.shift();
-				const n3 = src.shift();
-				const n4 = src.shift();
-				const n5 = src.shift();
-				const n6 = src.shift();
-				const n7 = src.shift();
-				const n8 = src.shift();
+				const n1 = src.shift(); strLength++
+				const n2 = src.shift(); strLength++
+				const n3 = src.shift(); strLength++
+				const n4 = src.shift(); strLength++
+				const n5 = src.shift(); strLength++
+				const n6 = src.shift(); strLength++
+				const n7 = src.shift(); strLength++
+				const n8 = src.shift(); strLength++
 				const hex = `${n1}${n2}${n3}${n4}${n5}${n6}${n7}${n8}`;
 				if (!n1 || !n2 || !n3 || !n4 || !n5 || !n6 || !n7 || !n8)
 					return [{
@@ -158,10 +156,10 @@ const toString: TokenCallback = function (quote, { col, row }, line) {
 			} else if (next == '\\') str += '\\';
 			else if (next == '"') str += '"';
 			else if (next == "'") str += "'";
-		} else str += src.shift();
+		} else str += v;
 	}
-	src.shift();
-	return [{ type: TokenType.String, value: str, col, row }, str.length + 1];
+	src.shift(); strLength++
+	return [{ type: TokenType.String, value: str, col, row },  strLength ];
 };
 
 // Tokenize the source code

@@ -7,7 +7,7 @@ import { AgalIntArray } from "magal/runtime/libraries/ListaEnteros.ts";
 function FileFunctions(mod: AgalObject){
   const leerArchivo = AgalFunction.from(async (_name, _stack, _este, archivo)=>{
     if(archivo instanceof AgalString){
-      const file = await permisos.get('LEER',archivo.value) ? await Deno.readFile(archivo.value).catch(()=>null) : null
+      const file = await Agal.Permissions.get('LEER',archivo.value) ? await Deno.readFile(archivo.value).catch(()=>null) : null
       if(file === null) return new AgalReferenceError(`No se pudo encontrar el archivo '${archivo.value}'`, _stack).throw();
       return AgalIntArray.from(file as unknown as number[]);
     }else return new AgalTypeError('El archivo debe ser una cadena', _stack).throw();
@@ -16,7 +16,7 @@ function FileFunctions(mod: AgalObject){
   const crearArchivo = AgalFunction.from(async (_name, _stack, _este, archivo, datos)=>{
     if(archivo instanceof AgalString){
       if(datos instanceof AgalIntArray){
-        const data = await permisos.get('CREAR',archivo.value) ? await Deno.writeFile(archivo.value, new Uint8Array(datos)).catch(()=>null) : false;
+        const data = await Agal.Permissions.get('CREAR',archivo.value) ? await Deno.writeFile(archivo.value, new Uint8Array(datos)).catch(()=>null) : false;
         if(data === null) return new AgalReferenceError(`No se pudo crear el archivo '${archivo.value}'`, _stack).throw();
         return datos;
       }else return new AgalTypeError('Los datos deben ser un ListaEnteros', _stack).throw();
@@ -36,7 +36,7 @@ async function readDir(path: string):Promise<string[]>{
 function FolderFunctions(mod: AgalObject){
   const leerCarpeta = AgalFunction.from(async (_name, _stack, _este, carpeta)=>{
     if(carpeta instanceof AgalString){
-      const data = await permisos.get('LEER',carpeta.value) ? await readDir(carpeta.value).catch(()=>null) : null;
+      const data = await Agal.Permissions.get('LEER',carpeta.value) ? await readDir(carpeta.value).catch(()=>null) : null;
       if(data === null) return new AgalReferenceError(`No se pudo leer la carpeta '${carpeta.value}'`, _stack).throw();
       return AgalIntArray.from(data as unknown as number[]);
     }else return new AgalTypeError('La carpeta debe ser una cadena', _stack).throw();
@@ -44,7 +44,7 @@ function FolderFunctions(mod: AgalObject){
   mod.setSync('leerCarpeta', leerCarpeta);
   const crearCarpeta = AgalFunction.from(async (_name, _stack, _este, carpeta)=>{
     if(carpeta instanceof AgalString){
-      const data = await permisos.get('CREAR',carpeta.value) ? await Deno.mkdir(carpeta.value).catch(()=>null) : false;
+      const data = await Agal.Permissions.get('CREAR',carpeta.value) ? await Deno.mkdir(carpeta.value).catch(()=>null) : false;
       if(data === null) return new AgalReferenceError(`No se pudo crear la carpeta '${carpeta.value}'`, _stack).throw();
       return AgalIntArray.from(data as unknown as number[]);
     }else return new AgalTypeError('La carpeta debe ser una cadena', _stack).throw();
@@ -58,7 +58,7 @@ export default function sab(){
   FolderFunctions(mod);
   const borrar = AgalFunction.from(async (_name, _stack, _este, archivo)=>{
     if(archivo instanceof AgalString){
-      const data = await permisos.get('BORRAR',archivo.value) ? await Deno.remove(archivo.value).catch(()=>null) : false;
+      const data = await Agal.Permissions.get('BORRAR',archivo.value) ? await Deno.remove(archivo.value).catch(()=>null) : false;
       if(data === null) return new AgalReferenceError(`No se pudo borrar '${archivo.value}'`, _stack).throw();
       return AgalIntArray.from(data as unknown as number[]);
     }else return new AgalTypeError('La ruta debe ser una cadena', _stack).throw();

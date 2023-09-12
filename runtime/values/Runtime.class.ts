@@ -33,7 +33,7 @@ export default class Runtime extends Inspecteable {
 		return data;
 	}
 	protected async _get(name: string): Promise<Runtime | null> {
-		const data = await Promise.resolve(this.#props.get(name));
+		const data = this.#props.get(name);
 		if (data) return data;
 		return await this.type.getProperty(name, this);
 	}

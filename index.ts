@@ -1,13 +1,13 @@
 import InputLoop from 'https://deno.land/x/input@2.0.3/index.ts';
 const input = new InputLoop();
 type PermissionNameFS = 'LEER' | 'CREAR' | 'BORRAR';
-type PermissionName = 'TODO' | PermissionNameFS;
+type PermissionName = 'TODO' | PermissionNameFS | 'NET';
 type PermissionData = string | typeof allPermissions;
 type Permission = Record<PermissionData, boolean>;
 
 const allPermissions = Symbol();
 
-class PermissionManager {
+class PermissionManager implements Permissions {
 	readonly all: typeof allPermissions = allPermissions;
 	permissions = {} as Record<PermissionName, Permission>;
 	isActive(permission: PermissionName, data: PermissionData) {
@@ -23,13 +23,14 @@ class PermissionManager {
 			if (typeof this.permissions['TODO'][this.all] === 'boolean')
 				return this.permissions['TODO'][this.all];
 		}
+		return null;
 	}
-  delete(permission: PermissionName, data: PermissionData = this.all) {
-    if (this.permissions[permission]) {
-      if (typeof this.permissions[permission][data] === 'boolean')
-        delete this.permissions[permission][data];
-    }
-  }
+	delete(permission: PermissionName, data: PermissionData = this.all) {
+		if (this.permissions[permission]) {
+			if (typeof this.permissions[permission][data] === 'boolean')
+				delete this.permissions[permission][data];
+		}
+	}
 	async get(permission: PermissionName, data: PermissionData = this.all) {
 		const access = this.isActive(permission, data);
 		if (typeof access === 'boolean') return access;
@@ -65,11 +66,36 @@ class PermissionManager {
 		this.permissions[permission][data] = false;
 	}
 }
+interface Permissions {
+	readonly all: typeof allPermissions;
+	permissions: Record<PermissionName, Permission>;
+	isActive(permission: PermissionName, data: PermissionData): boolean | null;
+	get(permission: PermissionName, data?: PermissionData): Promise<boolean>;
+	delete(permission: PermissionName, data?: PermissionData): void;
+	active(permission: PermissionName, data?: PermissionData): void;
+	unactive(permission: PermissionName, data?: PermissionData): void;
+}
+
 declare global {
-	const permisos: PermissionManager;
+	const Agal: {
+		Permissions: Permissions;
+		versions: {
+			agal: string;
+			deno: string;
+		};
+		fetch: typeof fetch;
+	};
 }
 // deno-lint-ignore no-explicit-any
-(globalThis as any).permisos = new PermissionManager();
-
+(globalThis as any).Agal = {
+	Permissions: new PermissionManager(),
+	versions: { agal: '0.1.0', deno: Deno.version.deno },
+	fetch: (url: string, options?: RequestInit) =>{
+		if(Deno.version.v8) return fetch(url, options);
+		return new Promise((resolve) => {
+			resolve(new Response(''));
+		});
+	}
+};
 export * as frontend from 'magal/frontend/index.ts';
 export * as runtime from 'magal/runtime/index.ts';

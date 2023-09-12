@@ -2,8 +2,10 @@ import  Runtime from 'magal/runtime/values/Runtime.class.ts';
 export default class Properties {
 	#data: Record<string, Runtime> = {};
 	father?: Properties;
+	v: Record<string, Runtime>;
 	constructor(father?: Properties) {
 		this.father = father;
+		this.v = this.#data
 	}
 	get data(): Record<string, Runtime>{
 		if(this.father) return {...this.father.data, ...this.#data};
@@ -19,9 +21,9 @@ export default class Properties {
 		if (!data && this.#data[name] && this.#data[name] instanceof Runtime) data = this.#data[name];
 		if (!data && this.father) data = this.father.get(name);
 
-		return data || null;
+		return data
 	}
-	 set(name: string, value: Runtime): Runtime {
+	set(name: string, value: Runtime): Runtime {
 		this.#data[name] = value;
 		return value;
 	}

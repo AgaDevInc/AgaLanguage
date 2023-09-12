@@ -1,1 +1,11 @@
-modulo.exporta = requiere('sab').leerArchivo('./test.ts').aCadena()
+const http = requiere('http');
+const LE = requiere('ListaEnteros')
+
+pintar('http://localhost')
+http.servidor(80, fn server(req){
+  const agent = req.cabeceras['user-agent']
+  ret http.Respuesta(LE.desde('Tu agente es:\n\n' + agent))
+}, fn err(error){
+  const msg = 'Error en el servidor: ' + error.mensaje
+  ret http.Respuesta(LE.desde(msg))
+})

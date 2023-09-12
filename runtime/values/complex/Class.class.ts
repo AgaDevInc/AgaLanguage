@@ -11,7 +11,7 @@ import AgalNull, { AgalVoid } from 'magal/runtime/values/primitive/Null.class.ts
 import AgalError, { AgalTypeError } from 'magal/runtime/values/internal/Error.class.ts';
 
 const InstanceDefault = new Runtime() as AgalClass;
-InstanceDefault.makeInstance = () => new Properties(Runtime.loadProperties());
+InstanceDefault.makeInstance = (r) => new Properties(r?r.loadProperties():Runtime.loadProperties());
 InstanceDefault.getConstructor = () => Promise.resolve(null);
 
 type PropertiesClass = Record<
@@ -42,8 +42,8 @@ export default class AgalClass extends Runtime {
 				const super_ = this.#instance.father
 					? new AgalObject().setProperties(this.#instance.father)
 					: AgalNull;
-				v = v.then(v => (v instanceof AgalFunction ? v.setVar('super', super_) : v));
-				if (meta.includes(ClassPropertyExtra.Static)) v.then(v => this._set(key, v));
+				v = Promise.resolve(v.then(v => (v instanceof AgalFunction ? v.setVar('super', super_) : v)));
+				if (meta.includes(ClassPropertyExtra.Static)) this._set(key, v)
 				else v.then(v => this.#instance.set(key, v));
 			}
 		}
@@ -70,10 +70,11 @@ export default class AgalClass extends Runtime {
 	}
 	async call(name: string, stack: IStack, _este: Runtime, ..._args: Runtime[]): Promise<Runtime> {
 		const constructor = await this.getConstructor();
-		const Instance = new AgalObject().setProperties(this.makeInstance());
+		const data = this.makeInstance()
+		const Instance = new AgalObject().setProperties(data);
 		if (constructor) {
 			const res = await constructor.call(name, stack, Instance, ..._args);
-			if (res !== AgalVoid) return res;
+			if (res instanceof Runtime && res !== AgalVoid) return res;
 		}
 		return Instance;
 	}
@@ -92,6 +93,7 @@ export default class AgalClass extends Runtime {
 		> = {};
 		for (const method of body) {
 			const data = await evaluate(method.value!, env, defaultStack);
+			if(data instanceof AgalFunction) data.setName(`${identifier}.${method.identifier}`); 
 			properties[method.identifier] = {
 				meta: [method.extra!],
 				value: data,

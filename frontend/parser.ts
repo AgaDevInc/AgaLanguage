@@ -68,7 +68,7 @@ export default class Parser {
 				row: 0,
 				file: '<indeterminado>',
 			} as Token & { type: TokenType.Error };
-		if(prev.type != type)
+		if (prev.type != type)
 			return {
 				...prev,
 				type: TokenType.Error,
@@ -456,8 +456,15 @@ export default class Parser {
 		_ = this.expect(TokenType.OpenParen, 'No se encontró "("');
 		if (_.type == TokenType.Error)
 			return this.makeError(_, ErrorType.ParserError) as unknown as FunctionDeclaration;
-		const args: string[] = [];
+		const args: (string | IterableLiteral)[] = [];
 		while (this.not_eof() && this.at().type != TokenType.CloseParen) {
+			if (this.at().type === TokenType.Dot) {
+				const data = this.parse_iterable() as unknown as ErrorStmt | IterableLiteral;
+				if (data.kind === 'Error') return data as unknown as FunctionDeclaration;
+				args.push(data);
+				if (this.at().type == TokenType.Comma) this.eat();
+				continue;
+			}
 			const data = this.expect(
 				TokenType.Identifier,
 				'No se encontro el identificador del argumento'
@@ -545,8 +552,15 @@ export default class Parser {
 		const name = data.value;
 		const prev = this.eat();
 		if (prev.type === TokenType.OpenParen) {
-			const args: string[] = [];
+			const args: (string | IterableLiteral)[] = [];
 			while (this.not_eof() && this.at().type != TokenType.CloseParen) {
+				if(this.at().type === TokenType.Dot) {
+					const data = this.parse_iterable() as unknown as ErrorStmt | IterableLiteral;
+					if (data.kind === 'Error') return data as unknown as ClassProperty;
+					args.push(data);
+					if (this.at().type == TokenType.Comma) this.eat();
+					continue;
+				}
 				const data = this.expect(TokenType.Identifier, 'No se encontro el identificador');
 				if (data.type == TokenType.Error)
 					return this.makeError(data, ErrorType.ParserError) as unknown as ClassProperty;
@@ -945,11 +959,12 @@ export default class Parser {
 			row: callee.row,
 			file: callee.file,
 		} as CallExpr;
-		if (this.at().type == TokenType.OpenParen || this.at().type == TokenType.Dot) call_expr = this.parse_call_member_expr(call_expr);
+		if (this.at().type == TokenType.OpenParen || this.at().type == TokenType.Dot)
+			call_expr = this.parse_call_member_expr(call_expr);
 
 		return call_expr;
 	}
-	private parse_call_member_expr(object?:Expr): Expr {
+	private parse_call_member_expr(object?: Expr): Expr {
 		const member = this.parse_member_expr(object);
 
 		if (this.at().type == TokenType.OpenParen) return this.parse_call_expr(member);
@@ -1048,7 +1063,7 @@ export default class Parser {
 					}
 					return {
 						kind: EXPRESSIONS_TYPE.UNARY_EXPR,
-						value: this.parse_primary_expr(),
+						value: this.parse_expr(),
 						operator,
 						col,
 						row,
@@ -1060,6 +1075,16 @@ export default class Parser {
 				return this.makeError(this.eat(), ErrorType.TokenizerError) as unknown as Expr;
 			case TokenType.Dot:
 				return this.parse_iterable();
+			case TokenType.Negate:
+				this.eat();
+				return {
+					kind: EXPRESSIONS_TYPE.UNARY_EXPR,
+					value: this.parse_expr(),
+					operator: tk.value,
+					col: tk.col,
+					row: tk.row,
+					file: tk.file,
+				};
 		}
 		this.eat();
 		return this.makeError(

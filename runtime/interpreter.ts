@@ -28,7 +28,7 @@ export async function evaluate(
 			if (node.kind === 'ReturnStatement') return result;
 			if (result instanceof AgalError) return result;
 		}
-		return result ? result : AgalVoid;
+		return AgalVoid;
 	}
 	const stack = astNode === Stack.value ? Stack : { value: astNode, next: Stack };
 	switch (astNode.kind) {

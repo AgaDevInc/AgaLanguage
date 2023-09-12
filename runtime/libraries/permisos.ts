@@ -10,8 +10,8 @@ export default function Permisos() {
 		'quitar',
 		AgalFunction.from(async (_name, stack, _este, permiso, data) => {
 			if (permiso instanceof AgalString) {
-				if (!data) permisos.delete(permiso.value as 'TODO');
-				else if (data instanceof AgalString) permisos.delete(permiso.value as 'TODO', data.value);
+				if (!data) Agal.Permissions.delete(permiso.value as 'TODO');
+				else if (data instanceof AgalString) Agal.Permissions.delete(permiso.value as 'TODO', data.value);
 				else return new AgalTypeError('Se esperaba una cadena en el dato', stack).throw();
 			} else return new AgalTypeError('Se esperaba una cadena en el permiso', stack).throw();
 		})
@@ -20,8 +20,8 @@ export default function Permisos() {
 		'pedir',
 		AgalFunction.from(async (_name, stack, _este, permiso, data) => {
 			if (permiso instanceof AgalString) {
-				if (!data) await permisos.get(permiso.value as 'TODO');
-				else if (data instanceof AgalString) await permisos.get(permiso.value as 'TODO', data.value);
+				if (!data) await Agal.Permissions.get(permiso.value as 'TODO');
+				else if (data instanceof AgalString) await Agal.Permissions.get(permiso.value as 'TODO', data.value);
 				else return new AgalTypeError('Se esperaba una cadena en el dato', stack).throw();
 			} else return new AgalTypeError('Se esperaba una cadena en el permiso', stack).throw();
 		})

@@ -1,7 +1,7 @@
 import { colorize, FOREGROUND } from 'aga//colors_string/mod.ts';
 import { evaluate, IStack } from "magal/runtime/interpreter.ts";
 import Environment from "magal/runtime/Environment.class.ts";
-import { AgalVoid } from "magal/runtime/values/primitive/Null.class.ts";
+import AgalNull, { AgalVoid } from "magal/runtime/values/primitive/Null.class.ts";
 import StringGetter from "magal/runtime/values/primitive/String.class.ts";
 import Properties from "magal/runtime/values/internal/Properties.class.ts";
 import { BLOCK_TYPE, type FunctionDeclaration } from "magal/frontend/ast.ts";
@@ -62,6 +62,7 @@ export default class AgalFunction extends Runtime {
 		this.vars.forEach((value, key) =>	env.declareVar(key, stack, value, this.decl));
 		env.declareVar('este', stack, este, {
 			keyword: true,
+			constant: true,
 			col: this.decl.col,
 			row: this.decl.row,
 		});
@@ -73,7 +74,7 @@ export default class AgalFunction extends Runtime {
 				env.declareVar(param.identifier, stack, value, this.decl);
 				return rest.push(value);
 			}
-			env.declareVar(param, stack, value, this.decl);
+			env.declareVar(param, stack, value || AgalNull, this.decl);
 		});
 		return evaluate(
 			this.decl.body,

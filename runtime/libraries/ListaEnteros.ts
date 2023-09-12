@@ -6,6 +6,7 @@ import { AgalReferenceError } from 'magal/runtime/values/internal/Error.class.ts
 import AgalArray from 'magal/runtime/values/complex/Array.class.ts';
 import AgalFunction from 'magal/runtime/values/complex/Function.class.ts';
 import { AgalString } from "magal/runtime/values/primitive/String.class.ts";
+import { ClassPropertyExtra } from 'magal/frontend/ast.ts';
 
 export class AgalIntArray extends AgalArray {
   protected _set(): Promise<AgalRuntime> {
@@ -38,9 +39,11 @@ export class AgalIntArray extends AgalArray {
   protected _aConsolaEn(): Promise<string> {
     return this._aConsola();
   }
-  static from(list: number[]) {
+  static from(list: number[] | Uint8Array) {
     const l = new AgalIntArray();
-    for (let i = 0; i < list.length; i++) l.setSync(`${i}`, AgalNumberGetter(list[i]));
+    for (let i = 0; i < list.length; i++) {
+      l.setSync(`${i}`, AgalNumberGetter(list[i]));
+    }
     return l;
   }
   [Symbol.iterator] = function* (this: AgalIntArray) {
@@ -71,8 +74,8 @@ export default function ListaEnteros() {
 					return l;
 				}),
 			},
-      from: {
-        meta: [],
+      desde: {
+        meta: [ClassPropertyExtra.Static],
         value: AgalFunction.from(async function (_name, stack, _este, cadena) {
           const l = new AgalIntArray();
           if(!cadena) return l;
@@ -84,7 +87,7 @@ export default function ListaEnteros() {
             l.setSync(`${i}`, AgalNumberGetter(data.charCodeAt(i)));
           }
           return l;
-        }),
+        }).setName('ListaEnteros.desde'),
       }
 		},
 		undefined,

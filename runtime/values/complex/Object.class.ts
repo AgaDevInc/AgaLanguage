@@ -5,6 +5,9 @@ import Properties from 'magal/runtime/values/internal/Properties.class.ts';
 import Runtime, { defaultStack } from 'magal/runtime/values/Runtime.class.ts';
 
 const props = new Properties(Runtime.loadProperties());
+const noloaded = {
+	aConsolaEn: () => Promise.resolve(colorize('[No visible]', FOREGROUND.RED)),
+}
 export default class AgalObject extends Runtime {
 	static from(obj: Record<string, unknown>, stack: IStack) {
 		const o = new AgalObject();
@@ -16,12 +19,12 @@ export default class AgalObject extends Runtime {
 	async _aConsola(): Promise<string> {
 		let ref = false;
 		let obj = '{';
-		const keys = await this.keys();
+		const keys = this.keysSync();
 		if (keys.length === 0) return obj + '}';
 		obj += '\n';
 		for (let key of keys) {
 			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
-			const value = await this.get(key, defaultStack);
+			const value = this.getSync(key) ?? noloaded;
 			if (value === this) ref = true;
 			const valueStr =
 				value === this ? colorize('<ref>', FOREGROUND.CYAN) : await value.aConsolaEn();
@@ -39,11 +42,12 @@ export default class AgalObject extends Runtime {
 	}
 	toConsole(): string {
 		const keys = this.keysSync();
-		if (keys.length === 0) return '{}';
+		if (keys.length === 0) return colorize('[Agal Objeto '+colorize('{}',FOREGROUND.WHITE)+']', FOREGROUND.CYAN);
 		let obj = '{\n';
 		for (let key of keys) {
 			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
-			const value = this.getSync(key)!;
+			const value = this.getSync(key);
+			if(!value) continue;
 			const valueSTR = value === this ? '<ref>' : value instanceof AgalObject ? colorize('[Agal Objeto]', FOREGROUND.CYAN) : value.toConsole();
 			obj += `  ${key}: ${valueSTR.split('\n').join('\n  ')},\n`;
 		}

@@ -28,7 +28,7 @@ export default class Environment {
 	): RuntimeValue {
 		if (!name)
 			return new AgalReferenceError(`No se puede declara una variable sin nombre`, stack).throw();
-		if (this.isKeyword(name))
+		if (this.isKeyword(name) && !data.keyword)
 			return new AgalReferenceError(
 				`Variable '${name}' es una palabra reservada y no puede ser declarara`,
 				stack

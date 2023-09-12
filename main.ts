@@ -5,7 +5,6 @@ const { AgalReferenceError, AgalError } = agaLanguage.runtime.values.internal;
 const { defaultStack } = agaLanguage.runtime.values;
 const { agal, getModuleScope, evalLine } = agaLanguage.runtime;
 
-const version = '1.0.0';
 const name = 'Agal';
 
 function existFile(path: string): boolean {
@@ -17,8 +16,8 @@ function existFile(path: string): boolean {
 }
 
 function activePermission(permission: string, data: boolean | string | string[]) {
-	if (data === true) permisos.active(permission, permisos.all);
-	else if (typeof data === 'string') permisos.active(permission, data);
+	if (data === true) Agal.Permissions.active(permission as 'TODO', Agal.Permissions.all);
+	else if (typeof data === 'string') Agal.Permissions.active(permission as 'TODO', data);
 	else if (Array.isArray(data)) for (const d of data) activePermission(permission, d);
 }
 type COMMANDS = 'ayuda' | 'ejecutar';
@@ -26,7 +25,7 @@ const rawApp: ApplicationRaw = {
 	default: {
 		async exec(command, flags, args) {
 			if (command === 'ayuda' || flags['ayuda']) return rawApp.ayuda.exec(command, flags, args);
-			if (flags['version']) return console.log(`${name} v${version}`);
+			if (flags['version']) return console.log(`${name} v${Agal.versions.agal}\nDeno v${Agal.versions.deno}`);
 			if (command)
 				return console.log(
 					`El comando '${command}' no existe, usa 'agal ayuda' para ver los comandos disponibles`
@@ -34,7 +33,7 @@ const rawApp: ApplicationRaw = {
 
 			const { default: InputLoop } = await import('https://deno.land/x/input@2.0.3/index.ts');
 			const input = new InputLoop();
-			console.log(`Bienvenido a ${name} v${version}`);
+			console.log(`Bienvenido a ${name} v${Agal.versions.agal}`);
 			console.log('Para salir usa ctrl+c o salir()');
 			let numberLine = 0;
 			let env = await getModuleScope('<agal>');
