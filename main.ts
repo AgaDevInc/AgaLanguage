@@ -17,7 +17,7 @@ function existFile(path: string): boolean {
 
 function activePermission(permission: string, data: boolean | string | string[]) {
 	if (data === true) Agal.Permissions.active(permission as 'TODO', Agal.Permissions.all);
-	else if (typeof data === 'string') Agal.Permissions.active(permission as 'TODO', data);
+	else if (typeof data === 'string') Agal.Permissions.active(permission as 'TODO', data as unknown as typeof Agal.Permissions.all);
 	else if (Array.isArray(data)) for (const d of data) activePermission(permission, d);
 }
 type COMMANDS = 'ayuda' | 'ejecutar';
