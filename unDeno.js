@@ -1,10 +1,11 @@
 const { inspect } = require('node:util');
+const fs = require('node:fs/promises');
 // Use in nodejs to replace Deno
 const fn = () => {};
 const req = new Request('https://example.com');
 const Deno = {
 	cwd: () => process.cwd(),
-	readTextFile: _path => 'Text file content',
+	readTextFile: path => fs.readFile(path, 'utf8'),
 	exit: code => process.exit(code),
 	readFile: _path => Promise.resolve(new Uint8Array()),
 	writeFile: fn,
