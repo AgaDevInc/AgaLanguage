@@ -23,7 +23,7 @@ export default class AgalObject extends Runtime {
 		if (keys.length === 0) return obj + '}';
 		obj += '\n';
 		for (let key of keys) {
-			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
+			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key, {colors: true});
 			const value = this.getSync(key) ?? noloaded;
 			if (value === this) ref = true;
 			const valueStr =
@@ -45,7 +45,7 @@ export default class AgalObject extends Runtime {
 		if (keys.length === 0) return colorize('[Agal Objeto '+colorize('{}',FOREGROUND.WHITE)+']', FOREGROUND.CYAN);
 		let obj = '{\n';
 		for (let key of keys) {
-			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
+			if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key,{colors: true});
 			const value = this.getSync(key);
 			if(!value) continue;
 			const valueSTR = value === this ? '<ref>' : value instanceof AgalObject ? colorize('[Agal Objeto]', FOREGROUND.CYAN) : value.toConsole();

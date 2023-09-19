@@ -1,7 +1,9 @@
 import type {
 	CatchStatement,
 	ElseStatement,
+	ExportStatement,
 	IfStatement,
+	ImportStatement,
 	Program,
 	ReturnStatement,
 	TryStatement,
@@ -13,6 +15,7 @@ import { type IStack, evaluate } from 'magal/runtime/interpreter.ts';
 import AgalError from 'magal/runtime/values/internal/Error.class.ts';
 import Primitive from 'magal/runtime/values/primitive/Primitive.class.ts';
 import AgalNull, { AgalVoid } from 'magal/runtime/values/primitive/Null.class.ts';
+import StringGetter from 'magal/runtime/values/primitive/String.class.ts';
 
 function contitionToBool(data: Runtime) {
 	if (data instanceof Primitive) {
@@ -89,5 +92,31 @@ export async function _try(_try: TryStatement, env: Environment, stack: IStack) 
 		const { body: finallyBody } = Finally;
 		data = await evaluate(finallyBody, finallyEnv, stack);
 	}
+	return data;
+}
+
+export async function _import(_import: ImportStatement, env: Environment, stack: IStack) {
+	const a = env.lookupVar('importar', stack, _import);
+	if (a instanceof AgalError) return a;
+	const _with = await evaluate(_import.with!, env, stack);
+	const data = await a.call('importar', stack, a, StringGetter(_import.path), _with);
+	if (data instanceof AgalError && data.throwed) return data;
+	if (typeof _import.as === 'string')	env.declareVar(_import.as, stack, data, {..._import, col: 0, row: 0});
+	return data;
+}
+
+export async function _export(_export: ExportStatement, env: Environment, stack: IStack) {
+	const exporta = env.lookupVar('exportar', stack, _export);
+	if (exporta instanceof AgalError) return exporta;
+	const data = await evaluate(_export.value, env, stack);
+	if (data instanceof AgalError && data.throwed) return data;
+	if(_export.identifier === '<exportable>'){
+		const keys = await data.keys();
+		for(const key of keys){
+			const value = await data.get(key);
+			await exporta.set(key, stack, value);
+		}
+	}
+	else await exporta.set(_export.identifier, stack, data);
 	return data;
 }

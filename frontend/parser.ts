@@ -26,7 +26,7 @@ import {
 	STATEMENTS_TYPE,
 	EXPRESSIONS_TYPE,
 	ClassPropertyExtra,
-} from './ast.ts';
+} from 'magal/frontend/ast.ts';
 import { tokenize, Token, TokenType } from './lexer.ts';
 
 const mathOperators = '+-*/%^';
@@ -93,7 +93,7 @@ export default class Parser {
 
 		// Parse until the end of the file
 		while (this.not_eof()) {
-			const data = this.parse_stmt(isFunction);
+			const data = this.parse_stmt(isFunction, undefined, undefined, true);
 			if (data) {
 				if (data.kind === 'Error') {
 					program.body.push(data);
@@ -127,8 +127,8 @@ export default class Parser {
 	}
 
 	private parse_stmt(isFunction: boolean, isLoop: boolean, isClassDecl: true): ClassProperty;
-	private parse_stmt(isFunction?: boolean, isLoop?: boolean, isClassDecl?: boolean): Stmt;
-	private parse_stmt(isFunction = false, isLoop = false, isClassDecl = false) {
+	private parse_stmt(isFunction?: boolean, isLoop?: boolean, isClassDecl?: boolean, isGlobalScope?: boolean): Stmt;
+	private parse_stmt(isFunction = false, isLoop = false, isClassDecl = false, isGlobalScope = false) {
 		const token = this.at();
 		switch (token.type) {
 			case TokenType.Error:
@@ -222,18 +222,103 @@ export default class Parser {
 			case TokenType.Intentar:
 				return this.parse_try_stmt(isFunction, isLoop, isClassDecl);
 			case TokenType.Capturar:
+			case TokenType.Finalmente:
 				return this.makeError(
 					{
 						...this.eat(),
-						value: `No puede usar "${TokenType.Capturar.toLowerCase()}" sin un "${TokenType.Intentar.toLowerCase()}"`,
+						value: `No puede usar "${token.type.toLowerCase()}" sin un "${TokenType.Intentar.toLowerCase()}"`,
 					},
 					ErrorType.ParserError
 				);
-			default:
+				case TokenType.Importar:
+					if(isGlobalScope)	return this.parse_import_stmt();
+					return this.parse_import_var();
+				case TokenType.Exportar:
+					if(isGlobalScope)	return this.parse_export_stmt();
+					return this.makeError(
+						{
+							...this.eat(),
+							value: `No puede usar "${TokenType.Exportar.toLowerCase()}" fuera del ambito global`,
+						},
+						ErrorType.ParserError
+					);
+				default:
 				return this.parse_expr();
 		}
 	}
-	parse_finally_stmt(isFN: boolean, isLoop: boolean) {
+	private parse_import_var(): Expr {
+		const { col, row, file } = this.eat();
+		const next = this.at();
+		if(next.type !== TokenType.OpenParen && next.type !== TokenType.Dot) return this.makeError({...next, value:'importar solo se puede usar en un ambito global'}, ErrorType.ParserError) as Expr;
+		const importIdentifier: Token = {
+			type: TokenType.Identifier,
+			value: 'importar',
+			col,
+			row,
+			file,
+		}
+		this.tokens.unshift(importIdentifier);
+		return this.parse_expr();
+	}
+	private parse_import_stmt(): Stmt {
+		const { col, row, file } = this.eat();
+		const data = this.expect(TokenType.String, 'No se encontro la ruta del archivo');
+		if (data.type === TokenType.Error)
+			return this.makeError(data, ErrorType.ParserError);
+		const path = data.value;
+		const stmt: Stmt = {
+			kind: STATEMENTS_TYPE.IMPORT_STATEMENT,
+			path,
+			col,
+			row,
+			file,
+		};
+		if (this.at().type === TokenType.Como) {
+			this.eat();
+			const data = this.expect(TokenType.Identifier, 'No se encontro el identificador');
+			if (data.type === TokenType.Error)
+				return this.makeError(data, ErrorType.ParserError);
+			stmt.as = data.value;
+		}
+		if (this.at().type === TokenType.Con) {
+			this.eat();
+			const tk = this.at()
+			const data = this.parse_object_expr();
+			if(data.kind !== LITERALS_TYPE.OBJECT_LITERAL) return this.makeError({...tk, value:'Se esperaba un objeto'}, ErrorType.ParserError);
+			stmt.with = data;
+		}
+		return stmt;
+	}
+	private parse_export_stmt(): Stmt {
+		const { col, row, file } = this.eat();
+		const data = this.parse_stmt();
+		let identifier = ''
+		switch (data.kind) {
+			// deno-lint-ignore no-fallthrough
+			case STATEMENTS_TYPE.VAR_DECLARATION:
+				if(!data.value) return this.makeError({...this.at(), value:'Se esperaba una asignación'}, ErrorType.ParserError);
+			case BLOCK_TYPE.FUNCTION_DECLARATION:
+			case BLOCK_TYPE.CLASS_DECLARATION:
+				identifier = data.identifier;
+				break;
+			case LITERALS_TYPE.OBJECT_LITERAL:
+				identifier = '<exportable>';
+				break;
+			default:
+				return this.makeError({...this.at(), value:'Se esperaba un identificador'}, ErrorType.ParserError);
+		}
+		const value = data.kind === STATEMENTS_TYPE.VAR_DECLARATION ? data.value! : data as unknown as Expr;
+		const stmt: Stmt = {
+			kind: STATEMENTS_TYPE.EXPORT_STATEMENT,
+			value,
+			identifier,
+			col,
+			row,
+			file,
+		}
+		return stmt;
+	}
+	private parse_finally_stmt(isFN: boolean, isLoop: boolean) {
 		let _;
 		const { col, row, file, type } = this.at();
 		if (type !== TokenType.Finalmente) return;
@@ -259,7 +344,7 @@ export default class Parser {
 		};
 		return Finally;
 	}
-	parse_catch_stmt(isFN: boolean, isLoop: boolean, strict = false) {
+	private parse_catch_stmt(isFN: boolean, isLoop: boolean, strict = false) {
 		let _;
 		const { type, col, row, file } = this.at();
 		if (type === TokenType.Capturar) {
@@ -306,7 +391,7 @@ export default class Parser {
 				ErrorType.ParserError
 			);
 	}
-	parse_try_stmt(isFN: boolean, isLoop: boolean, isClass: boolean): Stmt {
+	private parse_try_stmt(isFN: boolean, isLoop: boolean, isClass: boolean): Stmt {
 		const token = this.expect(
 			TokenType.Intentar,
 			`No se encontró la palabra clave "${TokenType.Intentar.toLowerCase()}""`
@@ -339,7 +424,7 @@ export default class Parser {
 			file,
 		};
 	}
-	parse_iterable(): IterableLiteral {
+	private parse_iterable(): IterableLiteral {
 		// ...value
 		const { col, row, file } = this.eat();
 		let _ = this.expect(TokenType.Dot, `No se encontró el token "${TokenType.Dot.toLowerCase()}"`);
@@ -905,7 +990,7 @@ export default class Parser {
 			let computed: boolean;
 
 			if (operator.type == TokenType.Dot) {
-				property = this.parse_primary_expr();
+				property = this.parse_primary_expr(true);
 				computed = false;
 				if (property.kind != LITERALS_TYPE.IDENTIFIER)
 					return this.makeError(
@@ -1009,9 +1094,13 @@ export default class Parser {
 
 		return left;
 	}
-	private parse_primary_expr(): Expr {
+	private parse_primary_expr(isProp?:boolean): Expr {
 		const tk = this.at();
 		switch (tk.type) {
+			case TokenType.Exportar:
+				// deno-lint-ignore no-fallthrough
+			case TokenType.Importar:
+				if(!isProp) return this.makeError({...tk, value: `${tk.type.toLowerCase()} no puede ser usado como expresión`}, ErrorType.ParserError) as unknown as Expr;
 			case TokenType.Identifier:
 				return {
 					kind: LITERALS_TYPE.IDENTIFIER,

@@ -51,7 +51,11 @@ export const enum TokenType {
   Extiende='Extiende',
   Intentar='Intentar',
   Capturar='Capturar',
-  Finalmente="Finalmente"
+  Finalmente="Finalmente",
+	Exportar='Exportar',
+	Importar='Importar',
+	Como='Como',
+	Con='Con',
 }
 export type Token = PreToken<TokenType> & {file:string};
 
@@ -72,6 +76,10 @@ const KEYWORDS: Record<string, TokenType> = {
 	intentar: TokenType.Intentar,
 	capturar: TokenType.Capturar,
 	finalmente: TokenType.Finalmente,
+	exportar: TokenType.Exportar,
+	importar: TokenType.Importar,
+	como: TokenType.Como,
+	con: TokenType.Con,
 };
 
 // Validate that the character is a letter

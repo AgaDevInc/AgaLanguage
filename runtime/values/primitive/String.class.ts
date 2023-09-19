@@ -29,7 +29,7 @@ export class AgalString extends Primitive {
 		return Promise.resolve(this.value);
 	}
 	_aConsolaEn(): Promise<string> {
-		return Promise.resolve(Deno.inspect(this.value));
+		return Promise.resolve(Deno.inspect(this.value,{colors: true}));
 	}
 	static loadProperties() {
 		return StringProperties;

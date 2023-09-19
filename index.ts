@@ -77,14 +77,15 @@ interface Permissions {
 }
 
 declare global {
-	const Agal: {
+	interface IAgal{
 		Permissions: Permissions;
 		versions: {
 			agal: string;
 			deno: string;
 		};
 		fetch: typeof fetch;
-	};
+	}
+	const Agal: IAgal;
 }
 // deno-lint-ignore no-explicit-any
 (globalThis as any).Agal = {

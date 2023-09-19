@@ -1363,6 +1363,8 @@ var STATEMENTS_TYPE;
     STATEMENTS_TYPE["RETURN_STATEMENT"] = 'ReturnStatement';
     STATEMENTS_TYPE["BREAK_STATEMENT"] = 'BreakStatement';
     STATEMENTS_TYPE["CONTINUE_STATEMENT"] = 'ContinueStatement';
+    STATEMENTS_TYPE["IMPORT_STATEMENT"] = 'ImportStatement';
+    STATEMENTS_TYPE["EXPORT_STATEMENT"] = 'ExportStatement';
 })(STATEMENTS_TYPE || (STATEMENTS_TYPE = {}));
 var EXPRESSIONS_TYPE;
 (function(EXPRESSIONS_TYPE) {
@@ -1434,6 +1436,10 @@ var TokenType1;
     TokenType["Intentar"] = "Intentar";
     TokenType["Capturar"] = "Capturar";
     TokenType["Finalmente"] = "Finalmente";
+    TokenType["Exportar"] = "Exportar";
+    TokenType["Importar"] = "Importar";
+    TokenType["Como"] = "Como";
+    TokenType["Con"] = "Con";
 })(TokenType1 || (TokenType1 = {}));
 const KEYWORDS = {
     def: 'Def',
@@ -1450,7 +1456,11 @@ const KEYWORDS = {
     extiende: 'Extiende',
     intentar: 'Intentar',
     capturar: 'Capturar',
-    finalmente: "Finalmente"
+    finalmente: "Finalmente",
+    exportar: 'Exportar',
+    importar: 'Importar',
+    como: 'Como',
+    con: 'Con'
 };
 function isAlpha(src = '') {
     return src.match(/[a-z_$0-9]/i) != null;
@@ -1813,7 +1823,7 @@ class Parser1 {
         const functions = [];
         const code = [];
         while(this.not_eof()){
-            const data = this.parse_stmt(isFunction);
+            const data = this.parse_stmt(isFunction, undefined, undefined, true);
             if (data) {
                 if (data.kind === 'Error') {
                     program.body.push(data);
@@ -1848,7 +1858,7 @@ class Parser1 {
         };
         return data;
     }
-    parse_stmt(isFunction = false, isLoop = false, isClassDecl = false) {
+    parse_stmt(isFunction = false, isLoop = false, isClassDecl = false, isGlobalScope = false) {
         const token = this.at();
         switch(token.type){
             case TokenType1.Error:
@@ -1919,13 +1929,104 @@ class Parser1 {
             case TokenType1.Intentar:
                 return this.parse_try_stmt(isFunction, isLoop, isClassDecl);
             case TokenType1.Capturar:
+            case TokenType1.Finalmente:
                 return this.makeError({
                     ...this.eat(),
-                    value: `No puede usar "${TokenType1.Capturar.toLowerCase()}" sin un "${TokenType1.Intentar.toLowerCase()}"`
+                    value: `No puede usar "${token.type.toLowerCase()}" sin un "${TokenType1.Intentar.toLowerCase()}"`
+                }, ErrorType.ParserError);
+            case TokenType1.Importar:
+                if (isGlobalScope) return this.parse_import_stmt();
+                return this.parse_import_var();
+            case TokenType1.Exportar:
+                if (isGlobalScope) return this.parse_export_stmt();
+                return this.makeError({
+                    ...this.eat(),
+                    value: `No puede usar "${TokenType1.Exportar.toLowerCase()}" fuera del ambito global`
                 }, ErrorType.ParserError);
             default:
                 return this.parse_expr();
         }
+    }
+    parse_import_var() {
+        const { col, row, file } = this.eat();
+        const next = this.at();
+        if (next.type !== TokenType1.OpenParen && next.type !== TokenType1.Dot) return this.makeError({
+            ...next,
+            value: 'importar solo se puede usar en un ambito global'
+        }, ErrorType.ParserError);
+        const importIdentifier = {
+            type: TokenType1.Identifier,
+            value: 'importar',
+            col,
+            row,
+            file
+        };
+        this.tokens.unshift(importIdentifier);
+        return this.parse_expr();
+    }
+    parse_import_stmt() {
+        const { col, row, file } = this.eat();
+        const data = this.expect(TokenType1.String, 'No se encontro la ruta del archivo');
+        if (data.type === TokenType1.Error) return this.makeError(data, ErrorType.ParserError);
+        const path = data.value;
+        const stmt = {
+            kind: STATEMENTS_TYPE.IMPORT_STATEMENT,
+            path,
+            col,
+            row,
+            file
+        };
+        if (this.at().type === TokenType1.Como) {
+            this.eat();
+            const data = this.expect(TokenType1.Identifier, 'No se encontro el identificador');
+            if (data.type === TokenType1.Error) return this.makeError(data, ErrorType.ParserError);
+            stmt.as = data.value;
+        }
+        if (this.at().type === TokenType1.Con) {
+            this.eat();
+            const tk = this.at();
+            const data = this.parse_object_expr();
+            if (data.kind !== LITERALS_TYPE.OBJECT_LITERAL) return this.makeError({
+                ...tk,
+                value: 'Se esperaba un objeto'
+            }, ErrorType.ParserError);
+            stmt.with = data;
+        }
+        return stmt;
+    }
+    parse_export_stmt() {
+        const { col, row, file } = this.eat();
+        const data = this.parse_stmt();
+        let identifier = '';
+        switch(data.kind){
+            case STATEMENTS_TYPE.VAR_DECLARATION:
+                if (!data.value) return this.makeError({
+                    ...this.at(),
+                    value: 'Se esperaba una asignación'
+                }, ErrorType.ParserError);
+            case BLOCK_TYPE.FUNCTION_DECLARATION:
+            case BLOCK_TYPE.CLASS_DECLARATION:
+                identifier = data.identifier;
+                break;
+            case LITERALS_TYPE.OBJECT_LITERAL:
+                identifier = '<exportable>';
+                break;
+            default:
+                return this.makeError({
+                    ...this.at(),
+                    value: 'Se esperaba un identificador'
+                }, ErrorType.ParserError);
+        }
+        const value = data.kind === STATEMENTS_TYPE.VAR_DECLARATION ? data.value : data;
+        const stmt = {
+            kind: STATEMENTS_TYPE.EXPORT_STATEMENT,
+            value,
+            identifier,
+            col,
+            row,
+            file
+        };
+        return stmt;
     }
     parse_finally_stmt(isFN, isLoop) {
         let _;
@@ -2507,7 +2608,7 @@ class Parser1 {
             let property;
             let computed;
             if (operator.type == TokenType1.Dot) {
-                property = this.parse_primary_expr();
+                property = this.parse_primary_expr(true);
                 computed = false;
                 if (property.kind != LITERALS_TYPE.IDENTIFIER) return this.makeError({
                     ...operator,
@@ -2606,9 +2707,15 @@ class Parser1 {
         }
         return left;
     }
-    parse_primary_expr() {
+    parse_primary_expr(isProp) {
         const tk = this.at();
         switch(tk.type){
+            case TokenType1.Exportar:
+            case TokenType1.Importar:
+                if (!isProp) return this.makeError({
+                    ...tk,
+                    value: `${tk.type.toLowerCase()} no puede ser usado como expresión`
+                }, ErrorType.ParserError);
             case TokenType1.Identifier:
                 return {
                     kind: LITERALS_TYPE.IDENTIFIER,
@@ -3149,7 +3256,9 @@ class AgalObject extends Runtime {
         if (keys.length === 0) return obj + '}';
         obj += '\n';
         for (let key of keys){
-            if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
+            if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key, {
+                colors: true
+            });
             const value = this.getSync(key) ?? noloaded;
             if (value === this) ref = true;
             const valueStr = value === this ? colorize('<ref>', FOREGROUND.CYAN) : await value.aConsolaEn();
@@ -3170,7 +3279,9 @@ class AgalObject extends Runtime {
         if (keys.length === 0) return colorize('[Agal Objeto ' + colorize('{}', FOREGROUND.WHITE) + ']', FOREGROUND.CYAN);
         let obj = '{\n';
         for (let key of keys){
-            if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key);
+            if (key.match(/^[a-zA-Z$_][a-zA-Z0-9$_]*$/) === null) key = Deno.inspect(key, {
+                colors: true
+            });
             const value = this.getSync(key);
             if (!value) continue;
             const valueSTR = value === this ? '<ref>' : value instanceof AgalObject ? colorize('[Agal Objeto]', FOREGROUND.CYAN) : value.toConsole();
@@ -3261,6 +3372,10 @@ async function evaluate(astNode, env, Stack) {
             return await _while(astNode, env, stack);
         case 'Try':
             return await _try(astNode, env, stack);
+        case 'ImportStatement':
+            return await _import(astNode, env, stack);
+        case 'ExportStatement':
+            return await _export(astNode, env, stack);
         case 'AssignmentExpr':
             return await assignment(astNode, env, stack);
         case 'MemberExpr':
@@ -3405,7 +3520,9 @@ function resolveName(expr) {
         case 'NumericLiteral':
             return expr.value + '';
         case 'StringLiteral':
-            return Deno.inspect(expr.value);
+            return Deno.inspect(expr.value, {
+                colors: true
+            });
         default:
             return '';
     }
@@ -3494,7 +3611,9 @@ class AgalString extends Primitive {
         return Promise.resolve(this.value);
     }
     _aConsolaEn() {
-        return Promise.resolve(Deno.inspect(this.value));
+        return Promise.resolve(Deno.inspect(this.value, {
+            colors: true
+        }));
     }
     static loadProperties() {
         return StringProperties;
@@ -3588,7 +3707,6 @@ const propsSyn = new Properties(AgalError.loadProperties());
 class AgalSyntaxError extends AgalError {
     constructor(message, stack){
         super('ErrorSintaxis', message, stack);
-        throw new Error("Error de sintaxis");
     }
     static loadProperties() {
         return propsSyn;
@@ -3812,6 +3930,33 @@ async function _try(_try, env, stack) {
         const { body: finallyBody } = Finally;
         data = await evaluate(finallyBody, finallyEnv, stack);
     }
+    return data;
+}
+async function _import(_import, env, stack) {
+    const a = env.lookupVar('importar', stack, _import);
+    if (a instanceof AgalError) return a;
+    const _with = await evaluate(_import.with, env, stack);
+    const data = await a.call('importar', stack, a, StringGetter(_import.path), _with);
+    if (data instanceof AgalError && data.throwed) return data;
+    if (typeof _import.as === 'string') env.declareVar(_import.as, stack, data, {
+        ..._import,
+        col: 0,
+        row: 0
+    });
+    return data;
+}
+async function _export(_export, env, stack) {
+    const exporta = env.lookupVar('exportar', stack, _export);
+    if (exporta instanceof AgalError) return exporta;
+    const data = await evaluate(_export.value, env, stack);
+    if (data instanceof AgalError && data.throwed) return data;
+    if (_export.identifier === '<exportable>') {
+        const keys = await data.keys();
+        for (const key of keys){
+            const value = await data.get(key);
+            await exporta.set(key, stack, value);
+        }
+    } else await exporta.set(_export.identifier, stack, data);
     return data;
 }
 function string_number(left, operator, right) {
@@ -4617,12 +4762,14 @@ async function getModule(path) {
     const splitPath = path.split(/[\\\/]/g);
     await module.set('ruta', defaultStack, StringGetter(splitPath.slice(0, -1).join('/')));
     await module.set('archivo', defaultStack, StringGetter(splitPath.join('/')));
-    await module.set('exporta', defaultStack, new AgalObject());
+    await module.set('exportar', defaultStack, new AgalObject());
     await module.set('hijos', defaultStack, new AgalArray());
-    await module.set('requiere', defaultStack, AgalFunction.from(async function requiere(_name, stack, _este, path) {
-        if (path instanceof AgalString) return await makeRequire(module, path.value, stack);
+    const importar = AgalFunction.from(async function requiere(_name, stack, _este, path, config) {
+        if (path instanceof AgalString) return await makeRequire(stack, module, path.value, config);
         return new AgalTypeError('Se esperaba una cadena', stack).throw();
-    }).setName('modulo.requiere', defaultStack));
+    }).setName('importar', defaultStack);
+    importar.set('mod', defaultStack, module);
+    await module.set('importar', defaultStack, importar);
     return module;
 }
 const cache = new Map();
@@ -4686,8 +4833,11 @@ function getGlobalScope() {
 async function getModuleScope(path) {
     const data = new Environment(getGlobalScope());
     const modulo = await getModule(path);
-    const requiere = await modulo.get('requiere');
-    data.declareVar('requiere', defaultStack, requiere, {
+    data.declareVar('importar', defaultStack, await modulo.get('importar'), {
+        col: 0,
+        row: 0
+    });
+    data.declareVar('exportar', defaultStack, await modulo.get('exportar'), {
         col: 0,
         row: 0
     });
@@ -4704,7 +4854,7 @@ async function agal(code, path = Deno.cwd() + '/inicio.agal', stack = defaultSta
     const scope = await getModuleScope(path);
     const data = await evaluate(program, scope, stack);
     if (data instanceof AgalError) return data;
-    return await data.get('exporta');
+    return await data.get('exportar');
 }
 async function evalLine(line, lineIndex, scope, stack = defaultStack) {
     scope = scope ?? await getModuleScope(Deno.cwd() + '/inicio.agal');
@@ -4814,22 +4964,34 @@ function resolve(path) {
     }
     return PATH.join('/');
 }
-async function makeRequire(modulo, pathFile, stack) {
+async function makeRequire(stack, modulo, pathFile, config) {
     if (__default4.has(pathFile)) return __default4.get(pathFile);
+    const Rtype = config && typeof config.getSync === 'function' && config.getSync('tipo');
+    let type = 'modulo';
+    if (Rtype instanceof AgalString && Rtype.value === 'json') type = 'json';
     const ruta = await (await modulo.get('ruta')).aCadena();
     const folder = ((ruta || Deno.cwd()) + '/').replace(/\\/g, '/').replace(/[\/]{1,}/g, '/');
     const path = resolve(new URL(pathFile, folder).href);
-    if (cache.has(path)) return cache.get(path);
+    if (type === 'modulo' && cache.has(path)) return cache.get(path);
     const file = await Deno.readTextFile(path).catch(()=>null);
     if (file === null) return new AgalReferenceError(`No se pudo encontrar el archivo '${pathFile}' en '${path}'`, stack).throw();
-    const code = await agal(file, path, stack);
-    cache.set(path, code);
     const hijos = await modulo.get('hijos');
     const hijos_agregar = await hijos.get('agregar');
     await hijos_agregar.call('agregar', stack, hijos, AgalObject.from({
         nombre: pathFile,
-        ruta: path
+        ruta: path,
+        tipo: type
     }, stack));
+    if (type === 'json') {
+        try {
+            const obj = JSON.parse(file);
+            return parseRuntime(stack, obj);
+        } catch (_e) {
+            return new AgalTypeError(`No se pudo importar como JSON "${pathFile}"`, stack).throw();
+        }
+    }
+    const code = await agal(file, path, stack);
+    cache.set(path, code);
     return code;
 }
 const mod4 = {

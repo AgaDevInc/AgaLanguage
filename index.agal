@@ -1,0 +1,3 @@
+
+importar './mod.agal' como mod con {tipo:'json'}
+pintar(mod, modulo.hijos[0])

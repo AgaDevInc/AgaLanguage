@@ -15,15 +15,17 @@ export async function getModule(path: string): Promise<AgalObject> {
 	const splitPath = path.split(/[\\\/]/g);
 	await module.set('ruta', defaultStack, StringGetter(splitPath.slice(0, -1).join('/')));
 	await module.set('archivo', defaultStack, StringGetter(splitPath.join('/')));
-	await module.set('exporta', defaultStack, new AgalObject());
+	await module.set('exportar', defaultStack, new AgalObject());
 	await module.set('hijos', defaultStack, new AgalArray());
+	const importar = AgalFunction.from(async function requiere(_name, stack, _este, path, config) {
+		if (path instanceof AgalString) return await makeRequire(stack,module, path.value, config as AgalObject);
+		return new AgalTypeError('Se esperaba una cadena', stack).throw();
+	}).setName('importar', defaultStack)
+	importar.set('mod', defaultStack, module);
 	await module.set(
-		'requiere',
+		'importar',
 		defaultStack,
-		AgalFunction.from(async function requiere(_name, stack, _este, path) {
-			if (path instanceof AgalString) return await makeRequire(module, path.value, stack);
-			return new AgalTypeError('Se esperaba una cadena', stack).throw();
-		}).setName('modulo.requiere', defaultStack)
+		importar
 	);
 	return module;
 }
@@ -31,8 +33,8 @@ export async function getModule(path: string): Promise<AgalObject> {
 export async function getModuleScope(path: string): Promise<Environment> {
 	const data = new Environment(getGlobalScope());
 	const modulo = await getModule(path);
-	const requiere = await modulo.get('requiere');
-	data.declareVar('requiere', defaultStack, requiere, { col: 0, row: 0 });
+	data.declareVar('importar', defaultStack, await modulo.get('importar'), { col: 0, row: 0 });
+	data.declareVar('exportar', defaultStack, await modulo.get('exportar'), { col: 0, row: 0 });
 	data.declareVar('modulo', defaultStack, modulo, { col: 0, row: 0 });
 	return data;
 }
@@ -48,7 +50,7 @@ export async function agal(
 	const scope = await getModuleScope(path);
 	const data = await evaluate(program, scope, stack);
 	if (data instanceof AgalError) return data;
-	return await data.get('exporta');
+	return await data.get('exportar');
 }
 
 export async function evalLine(

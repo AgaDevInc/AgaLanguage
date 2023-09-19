@@ -53,6 +53,10 @@ export async function evaluate(
 			return await statement._while(astNode, env, stack);
 		case 'Try':
 			return await statement._try(astNode, env, stack);
+		case 'ImportStatement':
+			return await statement._import(astNode, env, stack);
+		case 'ExportStatement':
+			return await statement._export(astNode, env, stack);
 
 		case 'AssignmentExpr':
 			return await expressions.assignment(astNode, env, stack);

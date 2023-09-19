@@ -16,6 +16,8 @@ export const enum STATEMENTS_TYPE {
 	RETURN_STATEMENT = 'ReturnStatement',
 	BREAK_STATEMENT = 'BreakStatement',
 	CONTINUE_STATEMENT = 'ContinueStatement',
+	IMPORT_STATEMENT = 'ImportStatement',
+	EXPORT_STATEMENT = 'ExportStatement',
 }
 
 export const enum EXPRESSIONS_TYPE {
@@ -74,7 +76,9 @@ export type Stmt =
 	| ClassProperty
 	| BlockStatement
 	| Expr
-	| ErrorStmt;
+	| ErrorStmt
+	| ImportStatement
+	| ExportStatement;
 
 export const enum ErrorType {
 	TokenizerError = 'TokenizerError',
@@ -85,6 +89,17 @@ export interface ErrorStmt extends IStmt {
 	message: string;
 	type: ErrorType;
 }	
+export interface ImportStatement extends IStmt{
+	kind: STATEMENTS_TYPE.IMPORT_STATEMENT
+	path: string;
+	as?: string;
+	with?: ObjectLiteral;
+}
+export interface ExportStatement extends IStmt {
+	kind: STATEMENTS_TYPE.EXPORT_STATEMENT;
+	identifier: string;
+	value: Expr;
+}
 export interface ReturnStatement extends IStmt {
 	kind: STATEMENTS_TYPE.RETURN_STATEMENT;
 	value?: Expr;
