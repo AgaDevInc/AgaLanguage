@@ -65,7 +65,7 @@ si(edad >= 18) {
 ### Ciclo Mientras
 ```agal
 def contador = 0;
-mientras(contador < 10) {
+mien(contador < 10) {
     pintar(contador);
     ++contador;
 }
@@ -73,8 +73,8 @@ mientras(contador < 10) {
 
 ## Funciones
 ```agal
-def suma(a, b) {
-    regresa a + b;
+fn suma(a, b) {
+    ret a + b;
 }
 
 pintar(suma(1, 2)); # 3
