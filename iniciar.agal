@@ -1,3 +1,5 @@
-const sab = requiere('sab');
-const data = sab.leerArchivo('./test.agal').aCadena()
-pintar(data);
+importar 'sab' como sab;
+
+const a = sab.leerCarpeta('.')
+
+pintar(a)

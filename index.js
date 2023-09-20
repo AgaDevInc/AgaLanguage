@@ -1456,7 +1456,7 @@ const KEYWORDS = {
     extiende: 'Extiende',
     intentar: 'Intentar',
     capturar: 'Capturar',
-    finalmente: "Finalmente",
+    finalmente: 'Finalmente',
     exportar: 'Exportar',
     importar: 'Importar',
     como: 'Como',
@@ -1751,6 +1751,15 @@ function tokenize1(sourceCode, file = 'iniciar.agal') {
                     value.length - 1
                 ];
             }
+        ],
+        [
+            '#',
+            function(_char, { col }, line) {
+                return [
+                    null,
+                    line.length - col
+                ];
+            }
         ]
     ]);
     const error = tokens.find((token)=>token.type == 'Error');
@@ -2029,25 +2038,26 @@ class Parser1 {
         return stmt;
     }
     parse_finally_stmt(isFN, isLoop) {
-        let _;
         const { col, row, file, type } = this.at();
         if (type !== TokenType1.Finalmente) return;
-        _ = this.expect(TokenType1.Finalmente, `No se encontró la palabra clave "${TokenType1.Finalmente.toLowerCase()}""`);
+        const _ = this.expect(TokenType1.Finalmente, `No se encontró la palabra clave "${TokenType1.Finalmente.toLowerCase()}""`);
         if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-        _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+        if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
             body.push(this.parse_stmt(isFN, isLoop));
         }
-        _ = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+        if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
         const Finally = {
             kind: BLOCK_TYPE.FINALLY,
             body,
             col,
             row,
-            file
+            file,
+            start,
+            end
         };
         return Finally;
     }
@@ -2064,14 +2074,14 @@ class Parser1 {
             const errorName = error.value;
             _ = this.expect(TokenType1.CloseParen, 'No se encontró ")"');
             if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-            _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-            if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+            const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+            if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
             const body = [];
             while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
                 body.push(this.parse_stmt(isFN, isLoop));
             }
-            _ = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-            if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+            const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+            if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
             const next = this.parse_catch_stmt(isFN, isLoop);
             if (next && next.kind === TokenType1.Error) return next;
             const Catch = {
@@ -2081,7 +2091,9 @@ class Parser1 {
                 next,
                 col,
                 row,
-                file
+                file,
+                start,
+                end
             };
             return Catch;
         }
@@ -2095,14 +2107,14 @@ class Parser1 {
         const token = this.expect(TokenType1.Intentar, `No se encontró la palabra clave "${TokenType1.Intentar.toLowerCase()}""`);
         if (token.type == TokenType1.Error) return this.makeError(token, ErrorType.ParserError);
         const { col, row, file } = token;
-        let _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+        if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const tryBody = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
             tryBody.push(this.parse_stmt(isFN, isLoop, isClass));
         }
-        _ = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+        if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
         const _catch = this.parse_catch_stmt(isFN, isLoop, true);
         if (_catch.kind === TokenType1.Error) return _catch;
         const _finally = this.parse_finally_stmt(isFN, isLoop);
@@ -2114,7 +2126,9 @@ class Parser1 {
             finally: _finally,
             col,
             row,
-            file
+            file,
+            start,
+            end
         };
     }
     parse_iterable() {
@@ -2142,42 +2156,51 @@ class Parser1 {
         const condition = this.parse_expr();
         _ = this.expect(TokenType1.CloseParen, 'No se encontró ")"');
         if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-        _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+        if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
+        const body = [];
+        const Else = {
+            kind: BLOCK_TYPE.ELSE_STATEMENT,
+            body: [],
+            col: 0,
+            row: 0,
+            file: token.file,
+            start,
+            end: {
+                col: 0,
+                row: 0
+            }
+        };
+        while(this.not_eof() && this.at().type != TokenType1.CloseBrace)body.push(this.parse_stmt(isFunction, isLoop));
+        const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+        if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
+        if (this.at().type == TokenType1.Entonces) {
+            const elseToken = this.eat();
+            Else.col = elseToken.col;
+            Else.row = elseToken.row;
+            if (this.at().type == TokenType1.Si) {
+                Else.body.push(this.parse_if_stmt(isFunction, isLoop));
+            } else {
+                const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+                if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
+                Else.start = start;
+                while(this.not_eof() && this.at().type != TokenType1.CloseBrace)Else.body.push(this.parse_stmt(isFunction, isLoop));
+                const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+                if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
+                Else.end = end;
+            }
+        }
         const ifStmt = {
             kind: BLOCK_TYPE.IF_STATEMENT,
             condition,
-            body: [],
+            body,
             col: token.col,
             row: token.row,
-            else: {
-                kind: BLOCK_TYPE.ELSE_STATEMENT,
-                body: [],
-                col: 0,
-                row: 0,
-                file: token.file
-            },
-            file: token.file
+            else: Else,
+            file: token.file,
+            start,
+            end
         };
-        while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
-            ifStmt.body.push(this.parse_stmt(isFunction, isLoop));
-        }
-        _ = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-        if (this.at().type == TokenType1.Entonces) {
-            const elseToken = this.eat();
-            ifStmt.else.col = elseToken.col;
-            ifStmt.else.row = elseToken.row;
-            if (this.at().type == TokenType1.Si) {
-                ifStmt.else.body.push(this.parse_if_stmt(isFunction, isLoop));
-            } else {
-                _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-                if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-                while(this.not_eof() && this.at().type != TokenType1.CloseBrace)ifStmt.else.body.push(this.parse_stmt(isFunction, isLoop));
-                _ = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-                if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-            }
-        }
         return ifStmt;
     }
     parse_return_stmt() {
@@ -2224,29 +2247,31 @@ class Parser1 {
         }
         _ = this.expect(TokenType1.CloseParen, 'No se encontró ")"');
         if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-        _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+        if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
             const data = this.parse_stmt(true);
             if (data.kind === 'Error') return data;
             body.push(data);
         }
-        const endToken = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-        if (endToken.type == TokenType1.Error) return this.makeError(endToken, ErrorType.ParserError);
+        const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+        if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
         return {
             kind: BLOCK_TYPE.FUNCTION_DECLARATION,
             identifier: name,
             params: args,
             body,
-            string: this.getTo(col, row, endToken.col, endToken.row),
+            string: this.getTo(col, row, end.col, end.row),
             col,
             row,
-            file
+            file,
+            start,
+            end
         };
     }
     parse_class_decl() {
-        let _ = this.expect(TokenType1.Clase, `No se encontró la palabra clave "${TokenType1.Clase.toLowerCase()}"`);
+        const _ = this.expect(TokenType1.Clase, `No se encontró la palabra clave "${TokenType1.Clase.toLowerCase()}"`);
         if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
         const { col, row, file } = _;
         const data = this.expect(TokenType1.Identifier, 'No se encontro el identificador');
@@ -2259,23 +2284,25 @@ class Parser1 {
             if (data.type === TokenType1.Error) return this.makeError(data, ErrorType.ParserError);
             extend = data.value;
         }
-        _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+        if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
             body.push(this.parse_stmt(false, false, true));
         }
-        const endToken = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-        if (endToken.type == TokenType1.Error) return this.makeError(endToken, ErrorType.ParserError);
+        const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+        if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
         return {
             kind: BLOCK_TYPE.CLASS_DECLARATION,
             identifier: name,
             body,
-            string: this.getTo(col, row, endToken.col, endToken.row),
+            string: this.getTo(col, row, end.col, end.row),
             extend,
             col,
             row,
-            file
+            file,
+            start,
+            end
         };
     }
     parse_class_prop(extra) {
@@ -2352,21 +2379,23 @@ class Parser1 {
         const condition = this.parse_expr();
         _ = this.expect(TokenType1.CloseParen, 'No se encontró ")"');
         if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
-        _ = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
+        if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
             body.push(this.parse_stmt(false, true));
         }
-        _ = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
-        if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
+        const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
+        if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
         return {
             kind: BLOCK_TYPE.WHILE_STATEMENT,
             condition,
             body,
             col,
             row,
-            file
+            file,
+            start,
+            end
         };
     }
     parse_var_decl() {
@@ -3032,7 +3061,15 @@ const defaultDeclaration = {
     kind: BLOCK_TYPE.FUNCTION_DECLARATION,
     params: [],
     string: '',
-    file: ''
+    file: '',
+    start: {
+        col: 0,
+        row: 0
+    },
+    end: {
+        col: 0,
+        row: 0
+    }
 };
 class Environment {
     parent;
@@ -3384,6 +3421,8 @@ async function evaluate(astNode, env, Stack) {
             return await call(astNode, env, stack);
         case 'BinaryExpr':
             return parseRuntime(stack, await binary(astNode, env, stack));
+        case 'UnaryExpr':
+            return parseRuntime(stack, await unary(astNode, env, stack));
         case 'Identifier':
             return await identifier(astNode, env, stack);
         case 'StringLiteral':
@@ -3497,6 +3536,38 @@ function string_string(left, operator, right) {
             return left.replace(right, '');
     }
     return false;
+}
+async function unary(unary, env, stack) {
+    const { operator, value, col, row, file } = unary;
+    if (operator === '++' || operator === '--') {
+        const data = {
+            kind: EXPRESSIONS_TYPE.ASSIGNMENT_EXPR,
+            assignee: value,
+            value: {
+                kind: EXPRESSIONS_TYPE.BINARY_EXPR,
+                left: value,
+                operator: operator[0],
+                right: {
+                    kind: LITERALS_TYPE.NUMERIC_LITERAL,
+                    value: 1,
+                    col,
+                    row,
+                    file
+                },
+                col,
+                row,
+                file
+            },
+            col,
+            row,
+            file
+        };
+        return await evaluate(data, env, stack);
+    }
+    const right = await evaluate(value, env, stack);
+    if (operator === '!') return right.aBuleano();
+    if (operator === '-') return multiply(await right.aNumero(), -1);
+    if (operator === '+') return right.aNumero();
 }
 const InstanceDefault = new Runtime();
 const AgalVoid = new AgalNull();
@@ -3997,7 +4068,7 @@ class AgalClass extends Runtime {
         for(const key in properties){
             const { meta, value } = properties[key];
             let v = Promise.resolve(value);
-            if (key === 'constructor') v.then((v)=>this.#instance.set(key, v)).then((v)=>this._set(key, v));
+            if (key === '__constructor__') v.then((v)=>this.#instance.set(key, v)).then((v)=>this._set(key, v));
             else {
                 const super_ = this.#instance.father ? new AgalObject().setProperties(this.#instance.father) : __default;
                 v = Promise.resolve(v.then((v)=>v instanceof AgalFunction ? v.setVar('super', super_) : v));
@@ -4009,7 +4080,7 @@ class AgalClass extends Runtime {
     }
     async getConstructor() {
         const Extends = await this.#extends.getConstructor();
-        const Instance = await this.#instance.get('constructor');
+        const Instance = await this.#instance.get('__constructor__');
         if (Instance instanceof AgalFunction) Instance.setVar('super', Extends || __default);
         if (Instance) return Instance;
         if (Extends) return Extends;
@@ -4099,7 +4170,7 @@ async function __default1(setGlobal, _setKeyword) {
 }
 async function __default2(setGlobal, _setKeyword, setLocal) {
     const MyError = new AgalClass('Error', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function(_name, stack, _este, mensaje) {
                 if (!mensaje) return new AgalError('Error', `Error`, stack);
@@ -4110,7 +4181,7 @@ async function __default2(setGlobal, _setKeyword, setLocal) {
     }, undefined, AgalError);
     setGlobal('Error', MyError, true);
     const MyErrorTipo = new AgalClass('ErrorTipo', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function(_name, stack, _este, mensaje) {
                 if (!mensaje) return new AgalTypeError(`ErrorTipo`, stack);
@@ -4121,7 +4192,7 @@ async function __default2(setGlobal, _setKeyword, setLocal) {
     }, MyError, AgalTypeError);
     setLocal('ErrorTipo', MyErrorTipo);
     const MyErrorReferencia = new AgalClass('ErrorReferencia', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function(_name, stack, _este, mensaje) {
                 if (!mensaje) return new AgalReferenceError(`ErrorReferencia`, stack);
@@ -4132,7 +4203,7 @@ async function __default2(setGlobal, _setKeyword, setLocal) {
     }, MyError, AgalReferenceError);
     setLocal('ErrorReferencia', MyErrorReferencia);
     const MyErrorSintaxis = new AgalClass('ErrorSintaxis', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function(_name, stack, _este, mensaje) {
                 if (!mensaje) return new AgalSyntaxError(`ErrorSintaxis`, stack);
@@ -4143,7 +4214,7 @@ async function __default2(setGlobal, _setKeyword, setLocal) {
     }, MyError, AgalSyntaxError);
     setLocal('ErrorSintaxis', MyErrorSintaxis);
     const MyErrorTokenizar = new AgalClass('ErrorTokenizar', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function(_name, stack, _este, mensaje) {
                 if (!mensaje) return new AgalTokenizeError(`ErrorTokenizar`, stack);
@@ -4159,7 +4230,7 @@ const Static = [
 ];
 async function __default3(setGlobal, _setKeyword) {
     const Buleano = new AgalClass('Buleano', {
-        constructor: {
+        __constructor__: {
             meta: Static,
             value: AgalFunction.from(async function(_name, _stack, _este, arg) {
                 return BooleanGetter(arg && await arg.aBuleano());
@@ -4168,7 +4239,7 @@ async function __default3(setGlobal, _setKeyword) {
     }, undefined, AgalBoolean);
     setGlobal('Buleano', Buleano, true);
     const Numero = new AgalClass('Numero', {
-        constructor: {
+        __constructor__: {
             meta: Static,
             value: AgalFunction.from(async function(_name, _stack, _este, arg) {
                 return NumberGetter(arg ? await arg.aNumero() : 0);
@@ -4177,7 +4248,7 @@ async function __default3(setGlobal, _setKeyword) {
     }, undefined, AgalNumber);
     setGlobal('Numero', Numero, true);
     const Cadena = new AgalClass('Cadena', {
-        constructor: {
+        __constructor__: {
             meta: Static,
             value: AgalFunction.from(async function(_name, _stack, _este, arg) {
                 return StringGetter(arg ? await arg.aCadena() : '');
@@ -4253,7 +4324,7 @@ class AgalIntArray extends AgalArray {
 }
 function ListaEnteros() {
     return new AgalClass('ListaEnteros', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function(_name, _stack, _este, ...args) {
                 const l = new AgalIntArray();
@@ -4476,7 +4547,7 @@ class AgalRequest extends Runtime {
 }
 function clases(mod) {
     mod.setSync('Respuesta', new AgalClass('Respuesta', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function constructor(_name, stack, _este, cuerpo, options) {
                 const res = new AgalResponse();
@@ -4507,7 +4578,7 @@ function clases(mod) {
         }
     }, undefined, AgalResponse));
     mod.setSync('Peticion', new AgalClass('Peticion', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async function constructor(_name, stack, _este, URL1, options) {
                 if (URL1 instanceof AgalString) {
@@ -4681,7 +4752,7 @@ function FolderFunctions(mod) {
         if (carpeta instanceof AgalString) {
             const data = await Agal.Permissions.get('LEER', carpeta.value) ? await readDir(carpeta.value).catch(()=>null) : null;
             if (data === null) return new AgalReferenceError(`No se pudo leer la carpeta '${carpeta.value}'`, _stack).throw();
-            return AgalIntArray.from(data);
+            return AgalArray.from(data);
         } else return new AgalTypeError('La carpeta debe ser una cadena', _stack).throw();
     }).setName('<internal>.sab.leerCarpeta');
     mod.setSync('leerCarpeta', leerCarpeta);
@@ -4741,7 +4812,7 @@ class AgalEvents extends Runtime {
 }
 function Eventos() {
     return new AgalClass('Eventos', {
-        constructor: {
+        __constructor__: {
             meta: [],
             value: AgalFunction.from(async ()=>new AgalEvents())
         }
@@ -4899,7 +4970,7 @@ const Static1 = [
 ];
 function __default6(setGlobal, _setKeyword) {
     const Lista = new AgalClass('Lista', {
-        constructor: {
+        __constructor__: {
             meta: Static1,
             value: AgalFunction.from(function(_name, _stack, _este) {
                 return Promise.resolve(new AgalArray());
@@ -4914,7 +4985,7 @@ function __default6(setGlobal, _setKeyword) {
     }, undefined, AgalArray);
     setGlobal('Lista', Lista, true);
     const Funcion = new AgalClass('Funcion', {
-        constructor: {
+        __constructor__: {
             meta: Static1,
             value: AgalFunction.from(async function(_name, _stack, _este, ...argums) {
                 const [code, ...args] = argums.reverse();
@@ -5045,7 +5116,7 @@ const mod8 = {
 const input = new InputLoop();
 const allPermissions = Symbol();
 class PermissionManager {
-    all = allPermissions;
+    all = allPermissions
     permissions = {};
     isActive(permission, data) {
         if (this.permissions[permission]) {

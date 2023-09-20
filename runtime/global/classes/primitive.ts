@@ -21,7 +21,7 @@ export default async function (
 	const Buleano = new AgalClass(
 		'Buleano',
 		{
-			constructor: {
+			__constructor__: {
 				meta: Static,
 				value: AgalFunction.from(async function (_name, _stack, _este, arg) {
 					return BooleanGetter(arg && (await arg.aBuleano()));
@@ -36,7 +36,7 @@ export default async function (
 	const Numero = new AgalClass(
 		'Numero',
 		{
-			constructor: {
+			__constructor__: {
 				meta: Static,
 				value: AgalFunction.from(async function (_name, _stack, _este, arg) {
 					return NumberGetter(arg ? await arg.aNumero() : 0);
@@ -51,7 +51,7 @@ export default async function (
 	const Cadena = new AgalClass(
 		'Cadena',
 		{
-			constructor: {
+			__constructor__: {
 				meta: Static,
 				value: AgalFunction.from(async function (_name, _stack, _este, arg) {
 					return StringGetter(arg ? await arg.aCadena() : '');

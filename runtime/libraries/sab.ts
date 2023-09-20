@@ -3,6 +3,7 @@ import AgalObject from "magal/runtime/values/complex/Object.class.ts";
 import { AgalReferenceError, AgalTypeError } from "magal/runtime/values/internal/Error.class.ts";
 import { AgalString } from "magal/runtime/values/primitive/String.class.ts";
 import { AgalIntArray } from "magal/runtime/libraries/ListaEnteros.ts";
+import AgalArray from "magal/runtime/values/complex/Array.class.ts";
 
 function FileFunctions(mod: AgalObject){
   const leerArchivo = AgalFunction.from(async (_name, _stack, _este, archivo)=>{
@@ -38,7 +39,7 @@ function FolderFunctions(mod: AgalObject){
     if(carpeta instanceof AgalString){
       const data = await Agal.Permissions.get('LEER',carpeta.value) ? await readDir(carpeta.value).catch(()=>null) : null;
       if(data === null) return new AgalReferenceError(`No se pudo leer la carpeta '${carpeta.value}'`, _stack).throw();
-      return AgalIntArray.from(data as unknown as number[]);
+      return AgalArray.from(data);
     }else return new AgalTypeError('La carpeta debe ser una cadena', _stack).throw();
   }).setName('<internal>.sab.leerCarpeta');
   mod.setSync('leerCarpeta', leerCarpeta);

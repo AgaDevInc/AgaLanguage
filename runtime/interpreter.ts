@@ -66,6 +66,8 @@ export async function evaluate(
 			return await expressions.call(astNode, env, stack);
 		case 'BinaryExpr':
 			return parseRuntime(stack, await expressions.binary(astNode, env, stack));
+		case 'UnaryExpr':
+			return parseRuntime(stack, await expressions.unary(astNode, env, stack));
 
 		case 'Identifier':
 			return await literal.identifier(astNode, env, stack);

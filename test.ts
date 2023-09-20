@@ -1,0 +1,1 @@
+console.log(Uint8Array.from('Hola'.split('').map((v) => v.charCodeAt(0))))

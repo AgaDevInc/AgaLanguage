@@ -17,6 +17,8 @@ const defaultDeclaration: FunctionDeclaration = {
 	params: [],
 	string: '',
 	file: '',
+	start:{col:0,row:0},
+	end:{col:0,row:0},
 };
 const defaultEnv = new Environment();
 let use = false;

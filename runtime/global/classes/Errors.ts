@@ -13,7 +13,7 @@ export default async function (
 	const MyError = new AgalClass(
 		'Error',
 		{
-			constructor: {
+			__constructor__: {
 				meta: [],
 				value: AgalFunction.from(async function (_name, stack, _este, mensaje) {
 					if (!mensaje) return new AgalError('Error', `Error`, stack);
@@ -30,7 +30,7 @@ export default async function (
 	const MyErrorTipo = new AgalClass(
 		'ErrorTipo',
 		{
-			constructor: {
+			__constructor__: {
 				meta: [],
 				value: AgalFunction.from(async function (_name, stack, _este, mensaje) {
 					if (!mensaje) return new AgalTypeError(`ErrorTipo`, stack);
@@ -47,7 +47,7 @@ export default async function (
 	const MyErrorReferencia = new AgalClass(
 		'ErrorReferencia',
 		{
-			constructor: {
+			__constructor__: {
 				meta: [],
 				value: AgalFunction.from(async function (_name, stack, _este, mensaje) {
 					if (!mensaje) return new AgalReferenceError(`ErrorReferencia`, stack);
@@ -64,7 +64,7 @@ export default async function (
 	const MyErrorSintaxis = new AgalClass(
 		'ErrorSintaxis',
 		{
-			constructor: {
+			__constructor__: {
 				meta: [],
 				value: AgalFunction.from(async function (_name, stack, _este, mensaje) {
 					if (!mensaje) return new AgalSyntaxError(`ErrorSintaxis`, stack);
@@ -81,7 +81,7 @@ export default async function (
 	const MyErrorTokenizar = new AgalClass(
 		'ErrorTokenizar',
 		{
-			constructor: {
+			__constructor__: {
 				meta: [],
 				value: AgalFunction.from(async function (_name, stack, _este, mensaje) {
 					if (!mensaje) return new AgalTokenizeError(`ErrorTokenizar`, stack);

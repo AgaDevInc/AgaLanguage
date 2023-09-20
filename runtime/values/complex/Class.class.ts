@@ -36,7 +36,7 @@ export default class AgalClass extends Runtime {
 		for (const key in properties) {
 			const { meta, value } = properties[key];
 			let v = Promise.resolve(value);
-			if (key === 'constructor')
+			if (key === '__constructor__')
 				v.then(v => this.#instance.set(key, v)).then(v => this._set(key, v));
 			else {
 				const super_ = this.#instance.father
@@ -52,7 +52,7 @@ export default class AgalClass extends Runtime {
 	}
 	async getConstructor(): Promise<Runtime | null> {
 		const Extends = await this.#extends.getConstructor();
-		const Instance = await this.#instance.get('constructor');
+		const Instance = await this.#instance.get('__constructor__');
 		if (Instance instanceof AgalFunction) Instance.setVar('super', Extends || AgalNull);
 		if (Instance) return Instance;
 		if (Extends) return Extends;

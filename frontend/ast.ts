@@ -116,9 +116,15 @@ export interface VarDeclaration extends IStmt {
 	identifier: string;
 	value?: Expr;
 }
+type Coord = {
+	row: number;
+	col: number;
+}
 interface IBlockStatement extends IStmt {
 	kind: BLOCK_TYPE;
 	body: Stmt[];
+	start: Coord;
+	end: Coord;
 }
 export type BlockStatement =
 	| ClassDeclaration

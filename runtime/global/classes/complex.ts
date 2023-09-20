@@ -20,7 +20,7 @@ export default function (
 	_setKeyword: (name: string, value: Runtime) => void
 ) {
 	const Lista = new AgalClass('Lista', {
-		constructor: {
+		__constructor__: {
 			meta: Static,
 			value:AgalFunction.from(function (_name, _stack, _este,) {
 				return Promise.resolve(new AgalArray());
@@ -35,7 +35,7 @@ export default function (
 	}, undefined, AgalArray);
 	setGlobal('Lista', Lista, true);
 	const Funcion = new AgalClass('Funcion', {
-		constructor: {
+		__constructor__: {
 			meta: Static,
 			// deno-lint-ignore require-await
 			value:AgalFunction.from(async function (_name, _stack, _este, ...argums) {

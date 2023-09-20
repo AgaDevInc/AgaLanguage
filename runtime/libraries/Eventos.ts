@@ -40,7 +40,7 @@ export class AgalEvents extends Runtime{
 }
 export default function Eventos(){
   return new AgalClass('Eventos', {
-    constructor: {
+    __constructor__: {
       meta:[],
       value: AgalFunction.from(async () => new AgalEvents())
     }

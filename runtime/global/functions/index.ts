@@ -13,7 +13,6 @@ export default async function (
 	_setKeyword: (name: string, value: Runtime) => void,
 	_setLocal: (name: string, value: Runtime) => void
 ) {
-	// deno-lint-ignore no-explicit-any
 	setGlobal('salir', new AgalFunction(async () => Deno.exit(0)), true);
 	setGlobal(
 		'analizar',

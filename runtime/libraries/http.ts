@@ -267,7 +267,7 @@ function clases(mod: AgalObject) {
 		new AgalClass(
 			'Respuesta',
 			{
-				constructor: {
+				__constructor__: {
 					meta: [],
 					value: AgalFunction.from(async function constructor(
 						_name,
@@ -325,7 +325,7 @@ function clases(mod: AgalObject) {
 		new AgalClass(
 			'Peticion',
 			{
-				constructor: {
+				__constructor__: {
 					meta: [],
 					value: AgalFunction.from(async function constructor(_name, stack, _este, URL, options) {
 						if (URL instanceof AgalString) {

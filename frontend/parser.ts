@@ -26,6 +26,7 @@ import {
 	STATEMENTS_TYPE,
 	EXPRESSIONS_TYPE,
 	ClassPropertyExtra,
+ElseStatement,
 } from 'magal/frontend/ast.ts';
 import { tokenize, Token, TokenType } from './lexer.ts';
 
@@ -319,28 +320,28 @@ export default class Parser {
 		return stmt;
 	}
 	private parse_finally_stmt(isFN: boolean, isLoop: boolean) {
-		let _;
 		const { col, row, file, type } = this.at();
 		if (type !== TokenType.Finalmente) return;
-		_ = this.expect(
+		const _ = this.expect(
 			TokenType.Finalmente,
 			`No se encontró la palabra clave "${TokenType.Finalmente.toLowerCase()}""`
 		);
 		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
-		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+		const start = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (start.type == TokenType.Error) return this.makeError(start, ErrorType.ParserError);
 		const body: Stmt[] = [];
 		while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
 			body.push(this.parse_stmt(isFN, isLoop));
 		}
-		_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+		const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (end.type == TokenType.Error) return this.makeError(end, ErrorType.ParserError);
 		const Finally: FinallyStatement = {
 			kind: BLOCK_TYPE.FINALLY,
 			body,
 			col,
 			row,
 			file,
+			start,end
 		};
 		return Finally;
 	}
@@ -360,14 +361,14 @@ export default class Parser {
 			const errorName = error.value;
 			_ = this.expect(TokenType.CloseParen, 'No se encontró ")"');
 			if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
-			_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-			if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+			const start = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+			if (start.type == TokenType.Error) return this.makeError(start, ErrorType.ParserError);
 			const body: Stmt[] = [];
 			while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
 				body.push(this.parse_stmt(isFN, isLoop));
 			}
-			_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-			if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+			const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+			if (end.type == TokenType.Error) return this.makeError(end, ErrorType.ParserError);
 			const next = this.parse_catch_stmt(isFN, isLoop) as CatchStatement | ErrorStmt;
 			if (next && next.kind === TokenType.Error) return next;
 			const Catch: CatchStatement = {
@@ -378,6 +379,7 @@ export default class Parser {
 				col,
 				row,
 				file,
+				start,end
 			};
 			return Catch;
 		}
@@ -398,14 +400,14 @@ export default class Parser {
 		);
 		if (token.type == TokenType.Error) return this.makeError(token, ErrorType.ParserError);
 		const { col, row, file } = token;
-		let _: Token = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+		const start: Token = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (start.type == TokenType.Error) return this.makeError(start, ErrorType.ParserError);
 		const tryBody: Stmt[] = [];
 		while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
 			tryBody.push(this.parse_stmt(isFN, isLoop, isClass));
 		}
-		_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+		const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (end.type == TokenType.Error) return this.makeError(end, ErrorType.ParserError);
 
 		const _catch = this.parse_catch_stmt(isFN, isLoop, true) as CatchStatement | ErrorStmt;
 		if (_catch.kind === TokenType.Error) return _catch;
@@ -422,6 +424,7 @@ export default class Parser {
 			col,
 			row,
 			file,
+			start,end
 		};
 	}
 	private parse_iterable(): IterableLiteral {
@@ -456,49 +459,54 @@ export default class Parser {
 
 		_ = this.expect(TokenType.CloseParen, 'No se encontró ")"');
 		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
-		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+		const start = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (start.type == TokenType.Error) return this.makeError(start, ErrorType.ParserError);
 
-		const ifStmt: IfStatement = {
-			kind: BLOCK_TYPE.IF_STATEMENT,
-			condition,
+		const body: Stmt[] = [];
+		const Else: ElseStatement = {
+			kind: BLOCK_TYPE.ELSE_STATEMENT,
 			body: [] as Stmt[],
-			col: token.col,
-			row: token.row,
-			else: {
-				kind: BLOCK_TYPE.ELSE_STATEMENT,
-				body: [] as Stmt[],
-				col: 0,
-				row: 0,
-				file: token.file,
-			},
+			col: 0,
+			row: 0,
 			file: token.file,
+			start,end:{col:0,row:0}
 		};
 
-		while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
-			ifStmt.body.push(this.parse_stmt(isFunction, isLoop));
-		}
-		_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-		if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+		while (this.not_eof() && this.at().type != TokenType.CloseBrace) 
+			body.push(this.parse_stmt(isFunction, isLoop));
+		const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (end.type == TokenType.Error) return this.makeError(end, ErrorType.ParserError);
 		if (this.at().type == TokenType.Entonces) {
 			const elseToken = this.eat();
-			ifStmt.else.col = elseToken.col;
-			ifStmt.else.row = elseToken.row;
+			Else.col = elseToken.col;
+			Else.row = elseToken.row;
 
 			// else if
 			if (this.at().type == TokenType.Si) {
-				ifStmt.else.body.push(this.parse_if_stmt(isFunction, isLoop));
+				Else.body.push(this.parse_if_stmt(isFunction, isLoop));
 			} else {
-				_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-				if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+				const start = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+				if (start.type == TokenType.Error) return this.makeError(start, ErrorType.ParserError);
+				Else.start = start;
 
 				while (this.not_eof() && this.at().type != TokenType.CloseBrace)
-					ifStmt.else.body.push(this.parse_stmt(isFunction, isLoop));
+					Else.body.push(this.parse_stmt(isFunction, isLoop));
 
-				_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-				if (_.type == TokenType.Error) return this.makeError(_, ErrorType.ParserError);
+				const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+				if (end.type == TokenType.Error) return this.makeError(end, ErrorType.ParserError);
+				Else.end = end;
 			}
 		}
+		
+		const ifStmt: IfStatement = {
+			kind: BLOCK_TYPE.IF_STATEMENT,
+			condition,
+			body,
+			col: token.col,
+			row: token.row,
+			else: Else,
+			file: token.file,	start,end
+		};
 		return ifStmt;
 	}
 	private parse_return_stmt(): ReturnStatement {
@@ -562,31 +570,32 @@ export default class Parser {
 		_ = this.expect(TokenType.CloseParen, 'No se encontró ")"');
 		if (_.type == TokenType.Error)
 			return this.makeError(_, ErrorType.ParserError) as unknown as FunctionDeclaration;
-		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-		if (_.type == TokenType.Error)
-			return this.makeError(_, ErrorType.ParserError) as unknown as FunctionDeclaration;
+		const start = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (start.type == TokenType.Error)
+			return this.makeError(start, ErrorType.ParserError) as unknown as FunctionDeclaration;
 		const body: Stmt[] = [];
 		while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
 			const data = this.parse_stmt(true);
 			if (data.kind === 'Error') return data as unknown as FunctionDeclaration;
 			body.push(data);
 		}
-		const endToken = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-		if (endToken.type == TokenType.Error)
-			return this.makeError(endToken, ErrorType.ParserError) as unknown as FunctionDeclaration;
+		const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (end.type == TokenType.Error)
+			return this.makeError(end, ErrorType.ParserError) as unknown as FunctionDeclaration;
 		return {
 			kind: BLOCK_TYPE.FUNCTION_DECLARATION,
 			identifier: name,
 			params: args,
 			body,
-			string: this.getTo(col, row, endToken.col, endToken.row),
+			string: this.getTo(col, row, end.col, end.row),
 			col,
 			row,
 			file,
+			start,end
 		};
 	}
 	private parse_class_decl(): ClassDeclaration {
-		let _: Token = this.expect(
+		const _: Token = this.expect(
 			TokenType.Clase,
 			`No se encontró la palabra clave "${TokenType.Clase.toLowerCase()}"`
 		);
@@ -609,25 +618,26 @@ export default class Parser {
 				return this.makeError(data, ErrorType.ParserError) as unknown as ClassDeclaration;
 			extend = data.value;
 		}
-		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-		if (_.type == TokenType.Error)
-			return this.makeError(_, ErrorType.ParserError) as unknown as ClassDeclaration;
+		const start = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (start.type == TokenType.Error)
+			return this.makeError(start, ErrorType.ParserError) as unknown as ClassDeclaration;
 		const body = [];
 		while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
 			body.push(this.parse_stmt(false, false, true));
 		}
-		const endToken = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-		if (endToken.type == TokenType.Error)
-			return this.makeError(endToken, ErrorType.ParserError) as unknown as ClassDeclaration;
+		const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (end.type == TokenType.Error)
+			return this.makeError(end, ErrorType.ParserError) as unknown as ClassDeclaration;
 		return {
 			kind: BLOCK_TYPE.CLASS_DECLARATION,
 			identifier: name,
 			body,
-			string: this.getTo(col, row, endToken.col, endToken.row),
+			string: this.getTo(col, row, end.col, end.row),
 			extend,
 			col,
 			row,
 			file,
+			start,end
 		};
 	}
 	private parse_class_prop(extra?: ClassPropertyExtra): ClassProperty {
@@ -715,16 +725,16 @@ export default class Parser {
 		_ = this.expect(TokenType.CloseParen, 'No se encontró ")"');
 		if (_.type == TokenType.Error)
 			return this.makeError(_, ErrorType.ParserError) as unknown as WhileStatement;
-		_ = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
-		if (_.type == TokenType.Error)
-			return this.makeError(_, ErrorType.ParserError) as unknown as WhileStatement;
+		const start = this.expect(TokenType.OpenBrace, 'No se encontró "{"');
+		if (start.type == TokenType.Error)
+			return this.makeError(start, ErrorType.ParserError) as unknown as WhileStatement;
 		const body: Stmt[] = [];
 		while (this.not_eof() && this.at().type != TokenType.CloseBrace) {
 			body.push(this.parse_stmt(false, true));
 		}
-		_ = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
-		if (_.type == TokenType.Error)
-			return this.makeError(_, ErrorType.ParserError) as unknown as WhileStatement;
+		const end = this.expect(TokenType.CloseBrace, 'No se encontró "}"');
+		if (end.type == TokenType.Error)
+			return this.makeError(end, ErrorType.ParserError) as unknown as WhileStatement;
 		return {
 			kind: BLOCK_TYPE.WHILE_STATEMENT,
 			condition,
@@ -732,6 +742,7 @@ export default class Parser {
 			col,
 			row,
 			file,
+			start, end
 		};
 	}
 	private parse_var_decl(): VarDeclaration {

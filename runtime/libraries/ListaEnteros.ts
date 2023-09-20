@@ -59,7 +59,7 @@ export default function ListaEnteros() {
 	return new AgalClass(
 		'ListaEnteros',
 		{
-			constructor: {
+			__constructor__: {
 				meta: [],
 				// deno-lint-ignore require-await
 				value: AgalFunction.from(async function (_name, _stack, _este, ...args) {

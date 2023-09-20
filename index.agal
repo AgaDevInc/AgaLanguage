@@ -1,3 +1,8 @@
-
-importar './mod.agal' como mod con {tipo:'json'}
-pintar(mod, modulo.hijos[0])
+importar './mod.agal' como mod;
+#pintar('Hola ')
+#Hola esto deberia ser un comentario
+pintar(mod, modulo.hijos[0])# este es otro comentario
+def i = 0;
+pintar(i);
+i = i - 3 
+pintar(i);
