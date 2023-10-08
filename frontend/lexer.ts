@@ -232,7 +232,7 @@ export function tokenize(sourceCode: string, file = 'iniciar.agal'): Token[] {
       function (char, { col, row }, line) {
         let value = char;
         let i = col;
-        while (isInt(line[++i] || '')) {
+        while (isInt(line[++i] || '') || line[i] == '$') {
           if (line[i] == '.' && value.includes('.'))
             return [
               {

@@ -1,8 +1,18 @@
-importar './mod.agal' como mod;
-#pintar('Hola ')
-#Hola esto deberia ser un comentario
-pintar(mod, modulo.hijos[0])# este es otro comentario
-def i = 0;
-pintar(i);
-i = i - 3 
-pintar(i);
+importar 'consola' como consola;
+importar 'clases/Lista' como Lista;
+importar 'ListaEnteros' como ListaEnteros;
+
+const data = ListaEnteros.desde('Hola')
+consola.pintar(data);
+consola.pintar(instanciaDe(data, Lista));
+consola.pintar(instanciaDe(data, ListaEnteros));
+clase Test extiende Lista{
+}
+
+const test = Test();
+consola.pintar(test);
+consola.pintar(instanciaDe(test, Test));
+consola.pintar(instanciaDe(test, Lista));
+consola.pintar(instanciaDe(test, ListaEnteros));
+
+consola.pintar(16.0 == 16, 16 == 16$10);

@@ -84,6 +84,11 @@ declare global {
 			deno: string;
 		};
 		fetch: typeof fetch;
+		args: string;
+		console: {
+			input: () => Promise<string>;
+			output: (str: string) => void;
+		}
 	}
 	const Agal: IAgal;
 }
@@ -96,7 +101,16 @@ declare global {
 		return new Promise((resolve) => {
 			resolve(new Response(''));
 		});
-	}
+	},
+	args: '',
+	console: {
+		input: async () => {
+			return await input.question('');
+		},
+		output: (str: string) => {
+			console.log(str);
+		},
+	},
 };
 export * as frontend from 'magal/frontend/index.ts';
-export * as runtime from 'magal/runtime/index.ts';
+export * as runtime from 'magal/RT/index.ts';

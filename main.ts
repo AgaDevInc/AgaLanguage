@@ -1,9 +1,11 @@
+import InputLoop from 'https://deno.land/x/input@2.0.3/index.ts';
 import Application, { type ApplicationRaw } from 'magal/Application.class.ts';
 import * as agaLanguage from 'magal/index.js';
 
-const { AgalReferenceError, AgalError } = agaLanguage.runtime.values.internal;
-const { defaultStack } = agaLanguage.runtime.values;
+const { AgalReferenceError, AgalError } = agaLanguage.runtime.values.complex;
+const { defaultStack } = agaLanguage.runtime.stack;
 const { agal, getModuleScope, evalLine } = agaLanguage.runtime;
+const {AgalRuntimeToConsole} = agaLanguage.runtime.utils
 
 const name = 'Agal';
 
@@ -31,7 +33,6 @@ const rawApp: ApplicationRaw = {
 					`El comando '${command}' no existe, usa 'agal ayuda' para ver los comandos disponibles`
 				);
 
-			const { default: InputLoop } = await import('https://deno.land/x/input@2.0.3/index.ts');
 			const input = new InputLoop();
 			console.log(`Bienvenido a ${name} v${Agal.versions.agal}`);
 			console.log('Para salir usa ctrl+c o salir()');
@@ -117,15 +118,16 @@ const rawApp: ApplicationRaw = {
 					`No se encontro el archivo '${file}'`,
 					defaultStack
 				).throw();
-				console.error(await error.aConsola());
+				console.error((await AgalRuntimeToConsole(defaultStack, error)).value??'nulo');
 				return;
 			}
 			const code = await Deno.readTextFile(file);
+			Agal.args = args.join(' ');
 
 			const data = await agal(code, file);
 
 			if (data instanceof AgalError) {
-				console.error(await data.aConsola());
+				console.error((await AgalRuntimeToConsole(defaultStack, data)).value??'nulo');
 				return;
 			}
 		},

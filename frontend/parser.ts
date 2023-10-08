@@ -305,9 +305,15 @@ export default class Parser {
 			case LITERALS_TYPE.OBJECT_LITERAL:
 				identifier = '<exportable>';
 				break;
-			default:
-				return this.makeError({...this.at(), value:'Se esperaba un identificador'}, ErrorType.ParserError);
 		}
+		if(this.at() && this.at().type === TokenType.Como) {
+			this.eat();
+			const data = this.expect(TokenType.Identifier, 'No se encontro el identificador');
+			if (data.type === TokenType.Error)
+				return this.makeError(data, ErrorType.ParserError);
+			identifier = data.value;
+		}
+		if(!identifier) return this.makeError({...this.at(), value:'Se esperaba un identificador'}, ErrorType.ParserError)
 		const value = data.kind === STATEMENTS_TYPE.VAR_DECLARATION ? data.value! : data as unknown as Expr;
 		const stmt: Stmt = {
 			kind: STATEMENTS_TYPE.EXPORT_STATEMENT,
@@ -1011,7 +1017,6 @@ export default class Parser {
 						},
 						ErrorType.ParserError
 					) as unknown as MemberExpr;
-				property.kind = LITERALS_TYPE.PROPERTY_IDENTIFIER as unknown as LITERALS_TYPE.IDENTIFIER;
 			} else {
 				property = this.parse_expr();
 				computed = true;
@@ -1121,7 +1126,18 @@ export default class Parser {
 					file: tk.file,
 				};
 			case TokenType.Number: {
-				const value_ = eval_complex(this.eat().value, {});
+				this.eat();
+				const data: [number, string] = [10, '0'];
+				if (tk.value.includes('$')){
+					const [base, value] = tk.value.split('$');
+					const float = parseFloat(base);
+					const int = parseInt(base);
+					if(int !== float || int < 0) return this.makeError({...tk, value: 'El número base debe ser un número entero real positivo'}, ErrorType.ParserError) as unknown as Expr;
+					if(2 > int || int > 36) return this.makeError({...tk, value: 'El número base debe estar entre 2 y 36'}, ErrorType.ParserError) as unknown as Expr;
+					data[0] = int;
+					data[1] = value;
+				}
+				const value_ = data[0] === 10 ? eval_complex(tk.value, {}) : parseInt(data[1], data[0]);
 				type Item<A> = A extends (infer I)[] ? I : A;
 				return {
 					kind: LITERALS_TYPE.NUMERIC_LITERAL,

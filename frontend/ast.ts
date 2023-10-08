@@ -36,9 +36,7 @@ export const enum LITERALS_TYPE {
 	STRING_LITERAL = 'StringLiteral',
 	ITERABLE_LITERAL = 'IterableLiteral',
 	IDENTIFIER = 'Identifier',
-	PROPERTY_IDENTIFIER = 'PropertyIdentifier',
 	CLASS_PROPERTY = 'ClassProperty',
-	PROPERTY_COMPUTED = 'PropertyComputed',
 }
 
 export type NodeType =
@@ -189,7 +187,6 @@ export type Expr =
 	| CallExpr
 	| MemberExpr
 	| Identifier
-	| PropertyIdentifier
 	| NumericLiteral
 	| StringLiteral
 	| IterableLiteral
@@ -235,10 +232,6 @@ export interface Identifier extends IExpr {
 	kind: LITERALS_TYPE.IDENTIFIER;
 	symbol: string;
 }
-export interface PropertyIdentifier extends IExpr {
-	kind: LITERALS_TYPE.PROPERTY_IDENTIFIER;
-	symbol: string;
-}
 export interface NumericLiteral extends IExpr {
 	kind: LITERALS_TYPE.NUMERIC_LITERAL;
 	value: LikeNumber;
@@ -256,14 +249,9 @@ export interface Property extends IExpr {
 	key: string;
 	value?: Expr;
 }
-export interface PropertyComputed extends IExpr {
-	kind: LITERALS_TYPE.PROPERTY_COMPUTED;
-	key: Expr;
-	value: Expr;
-}
 export interface ObjectLiteral extends IExpr {
 	kind: LITERALS_TYPE.OBJECT_LITERAL;
-	properties: (Property|IterableLiteral|PropertyComputed)[];
+	properties: (Property|IterableLiteral)[];
 }
 export interface ArrayLiteral extends IExpr {
 	kind: LITERALS_TYPE.ARRAY_LITERAL;
