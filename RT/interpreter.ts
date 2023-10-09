@@ -37,10 +37,10 @@ export default async function interpreter(
   switch (node.kind) {
     case 'Error': {
       if (node.type === ErrorType.ParserError)
-        return new AgalSyntaxError(Stack, node.message);
+        return new AgalSyntaxError(Stack, node.message).throw();
       if (node.type === ErrorType.TokenizerError)
-        return new AgalTokenizeError(Stack, node.message);
-      return new AgalError(Stack, node.message);
+        return new AgalTokenizeError(Stack, node.message).throw();
+      return new AgalError(Stack, node.message).throw();  
     }
     case LITERALS_TYPE.STRING_LITERAL:
       return eval.literal.string(node, env, Stack);

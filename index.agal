@@ -1,18 +1,21 @@
 importar 'consola' como consola;
-importar 'clases/Lista' como Lista;
-importar 'ListaEnteros' como ListaEnteros;
-
-const data = ListaEnteros.desde('Hola')
-consola.pintar(data);
-consola.pintar(instanciaDe(data, Lista));
-consola.pintar(instanciaDe(data, ListaEnteros));
-clase Test extiende Lista{
-}
-
-const test = Test();
-consola.pintar(test);
-consola.pintar(instanciaDe(test, Test));
-consola.pintar(instanciaDe(test, Lista));
-consola.pintar(instanciaDe(test, ListaEnteros));
-
-consola.pintar(16.0 == 16, 16 == 16$10);
+importar 'ws' como ws;
+const conexion = ws();
+fn abrir() {
+  consola.pintar('Conectado');
+  conexion.enviar('ping');
+};
+fn mensaje(datos) {
+  consola.pintar(datos);
+  conexion.desconectar();
+};
+fn cerrar() {
+  consola.pintar('Desconectado');
+};
+conexion.en('abrir', abrir);
+conexion.en('mensaje', mensaje);
+conexion.en('cerrar', cerrar);
+conexion.en('error', fn(error) {
+  consola.pintar('Error con el socket',error);
+});
+conexion.conectar('ws://localhost:8000');

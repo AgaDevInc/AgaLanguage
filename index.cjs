@@ -1929,10 +1929,8 @@ class Parser1 {
                 }, ErrorType.ParserError);
                 return this.parse_class_prop(ClassPropertyExtra.Static);
             case TokenType1.Semicolon:
-                while(this.not_eof() && this.at().type === TokenType1.Semicolon){
-                    this.eat();
-                }
-                return this.parse_stmt(...arguments);
+                while(this.not_eof() && this.at().type === TokenType1.Semicolon)this.eat();
+                return null;
             case TokenType1.Intentar:
                 return this.parse_try_stmt(isFunction, isLoop, isClassDecl);
             case TokenType1.Capturar:
@@ -2049,7 +2047,8 @@ class Parser1 {
         if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
-            body.push(this.parse_stmt(isFN, isLoop));
+            const data = this.parse_stmt(isFN, isLoop);
+            data && body.push(data);
         }
         const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
         if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
@@ -2081,7 +2080,8 @@ class Parser1 {
             if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
             const body = [];
             while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
-                body.push(this.parse_stmt(isFN, isLoop));
+                const data = this.parse_stmt(isFN, isLoop);
+                data && body.push(data);
             }
             const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
             if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
@@ -2114,7 +2114,8 @@ class Parser1 {
         if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const tryBody = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
-            tryBody.push(this.parse_stmt(isFN, isLoop, isClass));
+            const data = this.parse_stmt(isFN, isLoop, isClass);
+            data && tryBody.push(data);
         }
         const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
         if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
@@ -2174,7 +2175,10 @@ class Parser1 {
                 row: 0
             }
         };
-        while(this.not_eof() && this.at().type != TokenType1.CloseBrace)body.push(this.parse_stmt(isFunction, isLoop));
+        while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
+            const data = this.parse_stmt(isFunction, isLoop);
+            body.push(data);
+        }
         const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
         if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
         if (this.at().type == TokenType1.Entonces) {
@@ -2187,7 +2191,10 @@ class Parser1 {
                 const start = this.expect(TokenType1.OpenBrace, 'No se encontró "{"');
                 if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
                 Else.start = start;
-                while(this.not_eof() && this.at().type != TokenType1.CloseBrace)Else.body.push(this.parse_stmt(isFunction, isLoop));
+                while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
+                    const data = this.parse_stmt(isFunction, isLoop);
+                    data && Else.body.push(data);
+                }
                 const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
                 if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
                 Else.end = end;
@@ -2255,8 +2262,8 @@ class Parser1 {
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
             const data = this.parse_stmt(true);
-            if (data.kind === 'Error') return data;
-            body.push(data);
+            if (data && data.kind === 'Error') return data;
+            data && body.push(data);
         }
         const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
         if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
@@ -2291,7 +2298,8 @@ class Parser1 {
         if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
-            body.push(this.parse_stmt(false, false, true));
+            const data = this.parse_stmt(false, false, true);
+            data && body.push(data);
         }
         const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
         if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
@@ -2334,7 +2342,8 @@ class Parser1 {
             if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
             const body = [];
             while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
-                body.push(this.parse_stmt(true));
+                const data = this.parse_stmt(true);
+                data && body.push(data);
             }
             _ = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
             if (_.type == TokenType1.Error) return this.makeError(_, ErrorType.ParserError);
@@ -2386,7 +2395,8 @@ class Parser1 {
         if (start.type == TokenType1.Error) return this.makeError(start, ErrorType.ParserError);
         const body = [];
         while(this.not_eof() && this.at().type != TokenType1.CloseBrace){
-            body.push(this.parse_stmt(false, true));
+            const data = this.parse_stmt(false, true);
+            data && body.push(data);
         }
         const end = this.expect(TokenType1.CloseBrace, 'No se encontró "}"');
         if (end.type == TokenType1.Error) return this.makeError(end, ErrorType.ParserError);
@@ -2804,7 +2814,7 @@ class Parser1 {
                     return value;
                 }
             case TokenType1.Funcion:
-                return this.parse_func_decl();
+                return this.parse_func_decl(true);
             case TokenType1.Mientras:
                 return this.parse_while_stmt();
             case TokenType1.BinaryOperator:
@@ -3177,9 +3187,9 @@ async function interpreter(node, env, stack) {
     switch(node.kind){
         case 'Error':
             {
-                if (node.type === ErrorType.ParserError) return new AgalSyntaxError(Stack, node.message);
-                if (node.type === ErrorType.TokenizerError) return new AgalTokenizeError(Stack, node.message);
-                return new AgalError(Stack, node.message);
+                if (node.type === ErrorType.ParserError) return new AgalSyntaxError(Stack, node.message).throw();
+                if (node.type === ErrorType.TokenizerError) return new AgalTokenizeError(Stack, node.message).throw();
+                return new AgalError(Stack, node.message).throw();
             }
         case LITERALS_TYPE.STRING_LITERAL:
             return mod4.string(node, env, Stack);
@@ -5007,6 +5017,92 @@ function __default14(register) {
         return mod;
     });
 }
+function getCodeFromTextError(text) {
+    const match = text.match(/os error (\d+)/);
+    if (match) return parseInt(match[1]);
+    return 0;
+}
+function getMessageFromCode(code) {
+    switch(code){
+        case 10061:
+            return 'No se pudo establecer la conexión';
+        case 10054:
+            return 'Se ha cerrado la conexión';
+        case 10060:
+            return 'Tiempo de espera agotado';
+        default:
+            return 'Error desconocido';
+    }
+}
+class AgalWebSocket extends AgalEvents {
+    type = 'Objeto WebSocket extiende Eventos';
+    constructor(){
+        super();
+        this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
+        this.set(defaultStack, 'CERRADO', AgalBoolean.from(false));
+        this.set(defaultStack, 'conectar', AgalFunction.from((stack, _name, _self, URL1)=>{
+            if (URL1 instanceof AgalString) this.connect(URL1.value);
+            else return new AgalTypeError(stack, 'Se esperaba una cadena como URL de conexión');
+            return null;
+        }));
+    }
+    connect(url) {
+        try {
+            const urlTest = new URL(url);
+            if (urlTest.protocol !== 'ws:' && urlTest.protocol !== 'wss:') return new AgalTypeError(defaultStack, 'Se esperaba una URL con protocolo ws o wss');
+        } catch (_e) {
+            return new AgalTypeError(defaultStack, 'Se esperaba una URL válida');
+        }
+        const ws = new WebSocket(url);
+        ws.onopen = ()=>{
+            this.emit('abrir');
+            this.set(defaultStack, 'ABIERTO', AgalBoolean.from(true));
+        };
+        ws.onclose = (e)=>{
+            this.emit('cerrar', e.code, e.reason);
+            this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
+            this.set(defaultStack, 'CERRADO', AgalBoolean.from(true));
+        };
+        ws.onmessage = async (e)=>{
+            if (typeof e.data === 'string') this.emit('mensaje', e.data);
+            if (e.data instanceof ArrayBuffer) {
+                const buffer = new Uint8Array(e.data);
+                this.emit('mensaje', AgalIntArray.from(buffer));
+            }
+            if (e.data instanceof Blob) {
+                const buffer = new Uint8Array(await e.data.arrayBuffer());
+                this.emit('mensaje', AgalIntArray.from(buffer));
+            }
+        };
+        ws.onerror = (e)=>{
+            const code = getCodeFromTextError(e.message);
+            const message = getMessageFromCode(code);
+            this.emit('error', new AgalError(defaultStack, message));
+        };
+        this.set(defaultStack, 'enviar', AgalFunction.from((stack, _name, _self, mensaje)=>{
+            if (mensaje instanceof AgalString) ws.send(mensaje.value);
+            else if (mensaje instanceof AgalIntArray) ws.send(new Uint8Array(mensaje));
+            else return new AgalTypeError(stack, 'Se esperaba una cadena o una ListaEnteros como mensaje');
+            return null;
+        }));
+        this.set(defaultStack, 'desconectar', AgalFunction.from((_stack, _name, _self)=>{
+            ws.close();
+            return null;
+        }));
+        return ws;
+    }
+    static from() {
+        return new AgalWebSocket();
+    }
+}
+function __default15(register) {
+    register.set('ws', ()=>{
+        return new AgalClass('WebSocket', {
+            __constructor__: AgalWebSocket.from,
+            isInstance: (value)=>value instanceof AgalWebSocket
+        });
+    });
+}
 function getModule(path) {
     const module = new AgalDictionary();
     const splitPath = path.split(/[\\\/]/g);
@@ -5044,6 +5140,7 @@ async function agal(code, path = Deno.cwd() + '/inicio.agal', stack = defaultSta
     path = path.replace(/\\/g, '/');
     const parser = new Parser1();
     const program = parser.produceAST(code, false, path);
+    Deno.writeTextFileSync('./ast.json', JSON.stringify(program, null, 2));
     const scope = getModuleScope(path);
     const data = await interpreter(program, scope, stack);
     if (data instanceof AgalError) return data;
@@ -5065,7 +5162,7 @@ async function AgalEval(code) {
     const program = parser.produceAST(code, false, '<nativo>');
     return await interpreter(program.body, getGlobalScope(), defaultStack);
 }
-function __default15(register) {
+function __default16(register) {
     register.set('clases/Funcion', ()=>new AgalClass('Funcion', {
             __constructor__ (stack, _name, _este, ...argums) {
                 const [code, ...args] = argums.reverse();
@@ -5081,9 +5178,9 @@ function __default15(register) {
             }
         }));
 }
-function __default16(register) {
+function __default17(register) {
     __default1(register);
-    __default15(register);
+    __default16(register);
     __default2(register);
     __default3(register);
     __default4(register);
@@ -5109,7 +5206,8 @@ __default11(__default7);
 __default12(__default7);
 __default13(__default7);
 __default14(__default7);
-__default16(__default7);
+__default17(__default7);
+__default15(__default7);
 function resolve(path) {
     const pathArray = path.split(/[\\|\/]/).filter(Boolean);
     const PATH = [];
@@ -5167,6 +5265,7 @@ const mod11 = {
     AgalResponse: AgalResponse,
     AgalRequest: AgalRequest,
     AgalIntArray: AgalIntArray,
+    AgalWebSocket: AgalWebSocket,
     default: __default7
 };
 const mod12 = {
