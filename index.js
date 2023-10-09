@@ -3045,6 +3045,13 @@ class Enviroment {
         this.constants.clear();
         this.keywords.clear();
     }
+    toObject() {
+        const obj = this.parent?.toObject() ?? {};
+        for (const [key, value] of this.variables){
+            obj[key] = value;
+        }
+        return obj;
+    }
 }
 const cache1 = new Map();
 class AgalBoolean extends AgalPrimitive {
@@ -5140,7 +5147,6 @@ async function agal(code, path = Deno.cwd() + '/inicio.agal', stack = defaultSta
     path = path.replace(/\\/g, '/');
     const parser = new Parser1();
     const program = parser.produceAST(code, false, path);
-    Deno.writeTextFileSync('./ast.json', JSON.stringify(program, null, 2));
     const scope = getModuleScope(path);
     const data = await interpreter(program, scope, stack);
     if (data instanceof AgalError) return data;

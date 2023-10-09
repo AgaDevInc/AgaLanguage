@@ -1,5 +1,2 @@
-importar 'sab' como sab;
+test
 
-const a = sab.leerCarpeta('.')
-
-pintar(a)
