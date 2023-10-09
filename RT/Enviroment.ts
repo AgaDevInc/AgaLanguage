@@ -68,4 +68,11 @@ export default class Enviroment {
     this.constants.clear();
     this.keywords.clear();
   }
+  toObject(): Record<string, AgalRuntime> {
+    const obj = this.parent?.toObject() ?? {};
+    for (const [key, value] of this.variables) {
+      obj[key] = value;
+    }
+    return obj;
+  }
 }
