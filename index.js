@@ -5365,6 +5365,10 @@ globalThis.Agal = {
         }
     }
 };
-Deno._WebSocket = WebSocket;
+Deno._WebSocket = globalThis.Deno ? globalThis.WebSocket : class WebSocket {
+    constructor(){}
+    close() {}
+    send() {}
+};
 export { mod as frontend };
 export { mod14 as runtime };
