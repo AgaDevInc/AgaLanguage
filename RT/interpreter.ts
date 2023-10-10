@@ -25,6 +25,7 @@ export default async function interpreter(
   if (Array.isArray(node)) {
     let result: AgalRuntime | null = null;
     for (const Node of node) {
+      if(!Node) continue;
       const Stack =
         Node === stack?.value ? stack : { value: Node, next: stack };
       result = await interpreter(Node, env, Stack);
