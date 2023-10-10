@@ -5047,56 +5047,60 @@ class AgalWebSocket extends AgalEvents {
         super();
         this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
         this.set(defaultStack, 'CERRADO', AgalBoolean.from(false));
-        this.set(defaultStack, 'conectar', AgalFunction.from((stack, _name, _self, URL1)=>{
-            if (URL1 instanceof AgalString) this.connect(URL1.value);
+        this.set(defaultStack, 'conectar', AgalFunction.from(async (stack, _name, _self, URL1)=>{
+            if (URL1 instanceof AgalString) return await this.connect(URL1.value);
             else return new AgalTypeError(stack, 'Se esperaba una cadena como URL de conexión');
-            return null;
         }));
     }
     connect(url) {
-        try {
-            const urlTest = new URL(url);
-            if (urlTest.protocol !== 'ws:' && urlTest.protocol !== 'wss:') return new AgalTypeError(defaultStack, 'Se esperaba una URL con protocolo ws o wss');
-        } catch (_e) {
-            return new AgalTypeError(defaultStack, 'Se esperaba una URL válida');
-        }
-        const ws = new Deno._WebSocket(url);
-        ws.onopen = ()=>{
-            this.emit('abrir');
-            this.set(defaultStack, 'ABIERTO', AgalBoolean.from(true));
-        };
-        ws.onclose = (e)=>{
-            this.emit('cerrar', e.code, e.reason);
-            this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
-            this.set(defaultStack, 'CERRADO', AgalBoolean.from(true));
-        };
-        ws.onmessage = async (e)=>{
-            if (typeof e.data === 'string') this.emit('mensaje', e.data);
-            if (e.data instanceof ArrayBuffer) {
-                const buffer = new Uint8Array(e.data);
-                this.emit('mensaje', AgalIntArray.from(buffer));
+        return new Promise((resolve)=>{
+            try {
+                const urlTest = new URL(url);
+                if (urlTest.protocol !== 'ws:' && urlTest.protocol !== 'wss:') resolve(new AgalTypeError(defaultStack, 'Se esperaba una URL con protocolo ws o wss').throw());
+            } catch (_e) {
+                resolve(new AgalTypeError(defaultStack, 'Se esperaba una URL válida').throw());
             }
-            if (e.data instanceof Blob) {
-                const buffer = new Uint8Array(await e.data.arrayBuffer());
-                this.emit('mensaje', AgalIntArray.from(buffer));
-            }
-        };
-        ws.onerror = (e)=>{
-            const code = getCodeFromTextError(e.message);
-            const message = getMessageFromCode(code);
-            this.emit('error', new AgalError(defaultStack, message));
-        };
-        this.set(defaultStack, 'enviar', AgalFunction.from((stack, _name, _self, mensaje)=>{
-            if (mensaje instanceof AgalString) ws.send(mensaje.value);
-            else if (mensaje instanceof AgalIntArray) ws.send(new Uint8Array(mensaje));
-            else return new AgalTypeError(stack, 'Se esperaba una cadena o una ListaEnteros como mensaje');
-            return null;
-        }));
-        this.set(defaultStack, 'desconectar', AgalFunction.from((_stack, _name, _self)=>{
-            ws.close();
-            return null;
-        }));
-        return ws;
+            const ws = new Deno._WebSocket(url);
+            ws.onopen = ()=>{
+                this.set(defaultStack, 'enviar', AgalFunction.from((stack, _name, _self, mensaje)=>{
+                    if (mensaje instanceof AgalString) ws.send(mensaje.value);
+                    else if (mensaje instanceof AgalIntArray) ws.send(new Uint8Array(mensaje));
+                    else return new AgalTypeError(stack, 'Se esperaba una cadena o una ListaEnteros como mensaje');
+                    return null;
+                }));
+                this.set(defaultStack, 'desconectar', AgalFunction.from((_stack, _name, _self)=>{
+                    ws.close();
+                    return null;
+                }));
+                this.set(defaultStack, 'ABIERTO', AgalBoolean.from(true));
+                this.emit('abrir');
+                resolve(null);
+            };
+            ws.onclose = (e)=>{
+                this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
+                this.set(defaultStack, 'CERRADO', AgalBoolean.from(true));
+                this.emit('cerrar', e.code, e.reason);
+                resolve(null);
+            };
+            ws.onmessage = async (e)=>{
+                if (typeof e.data === 'string') this.emit('mensaje', e.data);
+                if (e.data instanceof ArrayBuffer) {
+                    const buffer = new Uint8Array(e.data);
+                    this.emit('mensaje', AgalIntArray.from(buffer));
+                }
+                if (e.data instanceof Blob) {
+                    const buffer = new Uint8Array(await e.data.arrayBuffer());
+                    this.emit('mensaje', AgalIntArray.from(buffer));
+                }
+            };
+            ws.onerror = (e)=>{
+                const code = getCodeFromTextError(e.message);
+                const message = getMessageFromCode(code);
+                const error = new AgalError(defaultStack, message);
+                this.emit('error', error);
+                resolve(null);
+            };
+        });
     }
     static from() {
         return new AgalWebSocket();

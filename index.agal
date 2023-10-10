@@ -1,21 +1,24 @@
 importar 'consola' como consola;
 importar 'ws' como ws;
-const conexion = ws();
+importar 'ListaEnteros' como ListaEnteros;
+
+const conecion = ws();
 fn abrir() {
   consola.pintar('Conectado');
-  conexion.enviar('ping');
 };
 fn mensaje(datos) {
-  consola.pintar(datos);
-  conexion.desconectar();
+  consola.pintar('Recibido:',datos);
+  si(instanciaDe(datos, ListaEnteros)) {
+    conecion.desconectar();
+  }
 };
 fn cerrar() {
   consola.pintar('Desconectado');
 };
-conexion.en('abrir', abrir);
-conexion.en('mensaje', mensaje);
-conexion.en('cerrar', cerrar);
-conexion.en('error', fn(error) {
-  consola.pintar('Error con el socket',error);
-});
-conexion.conectar('ws://localhost:8000');
+conecion.en('abrir', abrir);
+conecion.en('mensaje', mensaje);
+conecion.en('cerrar', cerrar);
+
+conecion.conectar('ws://localhost:8000');
+conecion.enviar('ping');
+conecion.enviar('Uint8Array')

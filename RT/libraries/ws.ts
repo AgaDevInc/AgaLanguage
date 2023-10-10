@@ -30,37 +30,62 @@ export class AgalWebSocket extends AgalEvents {
     this.set(
       defaultStack,
       'conectar',
-      AgalFunction.from((stack, _name, _self, URL) => {
-        if (URL instanceof AgalString) this.connect(URL.value);
+      AgalFunction.from(async (stack, _name, _self, URL) => {
+        if (URL instanceof AgalString) return await this.connect(URL.value);
         else
           return new AgalTypeError(
             stack,
             'Se esperaba una cadena como URL de conexión'
           );
-        return null;
       })
     );
   }
   connect(url: string) {
+    return new Promise<null | AgalTypeError>(resolve => {
     try {
       const urlTest = new URL(url);
       if (urlTest.protocol !== 'ws:' && urlTest.protocol !== 'wss:')
-        return new AgalTypeError(
+        resolve(new AgalTypeError(
           defaultStack,
           'Se esperaba una URL con protocolo ws o wss'
-        );
+        ).throw())
     } catch (_e) {
-      return new AgalTypeError(defaultStack, 'Se esperaba una URL válida');
+      resolve(new AgalTypeError(defaultStack, 'Se esperaba una URL válida').throw())
     }
-    const ws = new Deno._WebSocket(url);
+    const ws = new Deno._WebSocket(url) as WebSocket;
     ws.onopen = () => {
-      this.emit('abrir');
+      this.set(
+        defaultStack,
+        'enviar',
+        AgalFunction.from((stack, _name, _self, mensaje) => {
+          if (mensaje instanceof AgalString) ws.send(mensaje.value);
+          else if (mensaje instanceof AgalIntArray)
+            ws.send(new Uint8Array(mensaje));
+          else
+            return new AgalTypeError(
+              stack,
+              'Se esperaba una cadena o una ListaEnteros como mensaje'
+            );
+          return null;
+        })
+      );
+      this.set(
+        defaultStack,
+        'desconectar',
+        AgalFunction.from((_stack, _name, _self) => {
+          ws.close();
+          return null;
+        })
+      );
       this.set(defaultStack, 'ABIERTO', AgalBoolean.from(true));
+      this.emit('abrir');
+      resolve(null)
     };
     ws.onclose = e => {
-      this.emit('cerrar', e.code, e.reason);
       this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
       this.set(defaultStack, 'CERRADO', AgalBoolean.from(true));
+      this.emit('cerrar', e.code, e.reason);
+      resolve(null)
     };
     ws.onmessage = async e => {
       if (typeof e.data === 'string') this.emit('mensaje', e.data);
@@ -76,33 +101,11 @@ export class AgalWebSocket extends AgalEvents {
     ws.onerror = e => {
       const code = getCodeFromTextError((e as ErrorEvent).message)
       const message = getMessageFromCode(code)
-      this.emit('error', new AgalError(defaultStack, message));
+      const error = new AgalError(defaultStack, message)
+      this.emit('error', error)
+      resolve(null)
     };
-    this.set(
-      defaultStack,
-      'enviar',
-      AgalFunction.from((stack, _name, _self, mensaje) => {
-        if (mensaje instanceof AgalString) ws.send(mensaje.value);
-        else if (mensaje instanceof AgalIntArray)
-          ws.send(new Uint8Array(mensaje));
-        else
-          return new AgalTypeError(
-            stack,
-            'Se esperaba una cadena o una ListaEnteros como mensaje'
-          );
-        return null;
-      })
-    );
-    this.set(
-      defaultStack,
-      'desconectar',
-      AgalFunction.from((_stack, _name, _self) => {
-        ws.close();
-        return null;
-      })
-    )
-    return ws;
-  }
+  })}
   static from() {
     return new AgalWebSocket();
   }
