@@ -115,6 +115,10 @@ declare global {
 		},
 	},
 };
-(Deno as any)._WebSocket = WebSocket;
+(Deno as any)._WebSocket = globalThis.Deno ? globalThis.WebSocket : class WebSocket {
+	constructor() {	}
+	close() {	}
+	send() {	}
+}
 export * as frontend from 'magal/frontend/index.ts';
 export * as runtime from 'magal/RT/index.ts';
