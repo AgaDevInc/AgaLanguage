@@ -25,5 +25,10 @@ const Deno = {
 	listen: () => ({
 		[Symbol.asyncIterator]: async function* () {},
 	}),
+	_WebSocket: class WebSocket {
+		constructor() {}
+		close() {}
+		send() {}
+	},
 };
 module.exports = Deno;

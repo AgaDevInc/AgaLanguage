@@ -52,7 +52,7 @@ export class AgalWebSocket extends AgalEvents {
     } catch (_e) {
       return new AgalTypeError(defaultStack, 'Se esperaba una URL válida');
     }
-    const ws = new WebSocket(url);
+    const ws = new Deno._WebSocket(url);
     ws.onopen = () => {
       this.emit('abrir');
       this.set(defaultStack, 'ABIERTO', AgalBoolean.from(true));

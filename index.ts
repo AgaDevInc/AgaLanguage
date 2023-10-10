@@ -90,6 +90,9 @@ declare global {
 			output: (str: string) => void;
 		}
 	}
+	namespace Deno {
+		export const _WebSocket: typeof WebSocket;
+	}
 	const Agal: IAgal;
 }
 // deno-lint-ignore no-explicit-any
@@ -112,5 +115,6 @@ declare global {
 		},
 	},
 };
+(Deno as any)._WebSocket = WebSocket;
 export * as frontend from 'magal/frontend/index.ts';
 export * as runtime from 'magal/RT/index.ts';
