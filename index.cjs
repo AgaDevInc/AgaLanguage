@@ -3177,6 +3177,7 @@ async function interpreter(node, env, stack) {
     if (Array.isArray(node)) {
         let result = null;
         for (const Node of node){
+            if (!Node) continue;
             const Stack = Node === stack?.value ? stack : {
                 value: Node,
                 next: stack
