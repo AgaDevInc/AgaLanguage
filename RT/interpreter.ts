@@ -29,8 +29,8 @@ export default async function interpreter(
       const Stack =
         Node === stack?.value ? stack : { value: Node, next: stack };
       result = await interpreter(Node, env, Stack);
+      if (result instanceof AgalError && result.throwned) return result;
       if (Node.kind === 'ReturnStatement') return result;
-      if (result instanceof AgalError) return result;
     }
     return AgalNull.from(true);
   }

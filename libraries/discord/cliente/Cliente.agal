@@ -1,0 +1,20 @@
+importar 'consola' como consola;
+importar 'Eventos' como Eventos;
+importar '../DiscordWebSocket.agal' como DiscordWebSocket;
+
+clase Cliente{
+  __constructor__(){
+    este.eventos = Eventos()
+    este.ws = DiscordWebSocket(este);
+  }
+  sesion(token){
+    este.ws.conectar(token)
+  }
+  emitir(evento, ...args){
+    este.eventos.emitir(evento, ...args)
+  }
+  en(evento, oyente){
+    este.eventos.en(evento, oyente)
+  }
+}
+modulo.exportar = Cliente

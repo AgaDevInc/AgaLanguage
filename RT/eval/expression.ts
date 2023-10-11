@@ -43,7 +43,7 @@ export async function assignment(
   if (node.assignee.kind === EXPRESSIONS_TYPE.MEMBER_EXPR) {
     const obj = await interpreter(node.assignee.object, env, stack);
     if (obj instanceof AgalError && obj.throwned) return obj;
-    if (node.assignee.property.kind === 'Identifier')
+    if (node.assignee.property.kind === 'Identifier' && !node.assignee.computed)
       return obj.set(stack, node.assignee.property.symbol, val);
     const preKey = await interpreter(node.assignee.property, env, stack);
     if (preKey instanceof AgalError && preKey.throwned) return preKey.throw();
@@ -94,7 +94,7 @@ export async function member(
 ): Promise<AgalRuntime> {
   const obj = await interpreter(node.object, env, stack);
   if (obj instanceof AgalError && obj.throwned) return obj;
-  if (node.property.kind === LITERALS_TYPE.IDENTIFIER)
+  if (node.property.kind === LITERALS_TYPE.IDENTIFIER && node.computed === false)
     return obj.get(stack, node.property.symbol) || AgalNull.from(true);
   const preKey = await interpreter(node.property, env, stack);
   if (preKey instanceof AgalError && preKey.throwned) return preKey.throw();

@@ -1,0 +1,7 @@
+importar '../clases/Usuario.agal' como Usuario;
+fn ready(cliente, data){
+  const usuario = Usuario(data.user);
+  cliente.usuario = usuario;
+  cliente.emitir('listo', usuario);
+}
+modulo.exportar = ready;

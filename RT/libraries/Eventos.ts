@@ -1,12 +1,12 @@
 // deno-lint-ignore-file require-await
 import AgalClass from 'magal/RT/values/complex/AgalClass.ts';
 import AgalFunction from 'magal/RT/values/complex/AgalFunction.ts';
-import { AgalTypeError } from 'magal/RT/values/complex/AgalError.ts';
+import AgalError, { AgalTypeError } from 'magal/RT/values/complex/AgalError.ts';
 import AgalString from 'magal/RT/values/primitive/AgalString.ts';
 import { defaultStack } from 'magal/RT/stack.ts';
-import parse from 'magal/RT/values/parse.ts';
 import AgalComplex from 'magal/RT/values/complex/class.ts';
 import { Libraries } from 'magal/RT/libraries/register.ts';
+import parse from "magal/RT/values/parse.ts";
 
 export class AgalEvents extends AgalComplex {
   type = 'Objeto Eventos';
@@ -50,31 +50,31 @@ export class AgalEvents extends AgalComplex {
           return new AgalTypeError(
             stack,
             'Se esperaba un evento pero se recibió nada'
-          );
+          ).throw();
         if (!(evento instanceof AgalString))
-          return new AgalTypeError(stack, 'El evento debe ser una cadena');
+          return new AgalTypeError(stack, 'El evento debe ser una cadena').throw();
         if (!this.#events[evento.value]) return null;
         for (let i = 0; i < this.#events[evento.value].length; i++) {
-          this.#events[evento.value][i].call(stack, name, este, ...args);
+          const data = this.#events[evento.value][i].call(stack, name, este, ...args);
+          if(data instanceof AgalError && data.throwned) return data;
         }
         return null;
       })
     );
   }
   // deno-lint-ignore no-explicit-any
-  emit(evento: string, ...args: any[]) {
+  async emit(evento: string, ...args: any[]): Promise<AgalError | undefined> {
     if (!this.#events[evento]) return;
-    for (let i = 0; i < this.#events[evento].length; i++)
-      this.#events[evento][i].call(
-        defaultStack,
-        'emit',
-        this,
-        ...args.map(parse)
-      );
+    for (let i = 0; i < this.#events[evento].length; i++) {
+      const data = await this.#events[evento][i].call(defaultStack, 'emitir', this, ...args.map(parse));
+      if(data instanceof AgalError && data.throwned) return data;
+    }
+    return;
   }
   on(evento: string, funcion: AgalFunction) {
     if (!this.#events[evento]) this.#events[evento] = [];
     this.#events[evento].push(funcion);
+    return funcion;
   }
 }
 export default (register: Libraries) =>

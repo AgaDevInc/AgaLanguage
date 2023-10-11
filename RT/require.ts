@@ -35,6 +35,7 @@ const resolvePath = (path: string, folder: string) => {
     return null;
   }
 };
+
 export default async function makeRequire(
   stack: IStack,
   modulo: AgalDictionary,

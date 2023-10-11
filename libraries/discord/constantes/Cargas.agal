@@ -1,0 +1,21 @@
+exportar {
+  Hola: {
+    op: 10,
+    d: nulo
+  },
+  Heartbeat: {
+    op: 1,
+    d: nulo
+  },
+  Identificar: {
+    op: 2,
+    d: {
+      token: "",
+      properties: {
+        $os: "linux",
+        $browser: "agal-discord-lib",
+        $device: "agal-discord-lib"
+      }
+    }
+  },
+}

@@ -45,7 +45,7 @@ export function getModule(path: string): AgalDictionary {
 }
 
 export function getModuleScope(path: string): Enviroment {
-  const data = getGlobalScope();
+  const data = getGlobalScope().createChild();
   const modulo = getModule(path);
   data.set('importar', defaultStack, modulo.get(defaultStack, 'importar')!, {
     col: 0,

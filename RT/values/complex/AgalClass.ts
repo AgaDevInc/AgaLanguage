@@ -40,34 +40,16 @@ interface ValidMap<K, V> {
 }
 
 export class AgalInstance extends AgalComplex {
-  type: string;
-  #loaded = false;
-  constructor(
-    stack: IStack,
-    private props: ValidMap<string, AgalRuntime>,
-    parent?: AgalClass
-  ) {
+  type = 'Objeto';
+  loaded = false;
+  constructor(private props: ValidMap<string, AgalRuntime>) {
     super();
-    if (!parent) this.#loaded = true;
-    const constructor = props.get('__constructor__');
-    if (constructor === parent) this.#loaded = true;
-    else {
-      const call = constructor?.call;
-      if (call)
-        constructor.call = (stack, name, self, ...args) => {
-          this.#loaded = true;
-          return call.call(constructor, stack, name, self, ...args);
-        };
-    }
-    this.type = `Objeto ${
-      constructor?.get(stack, 'nombre')?.toString() ?? '<anonimo>'
-    }`;
   }
   _set(stack: IStack, key: string, value: AgalRuntime) {
     return super.set(stack, key, value);
   }
   set(stack: IStack, key: string, value: AgalRuntime) {
-    if (!this.#loaded)
+    if (!this.loaded)
       return new AgalReferenceError(
         stack,
         'No se puede modificar un objeto antes de que se cargue'
@@ -76,6 +58,25 @@ export class AgalInstance extends AgalComplex {
   }
   get(stack: IStack, key: string): AgalRuntime | null {
     return super.get(stack, key) || this.props.get(key) || null;
+  }
+  static async from(
+    stack: IStack,
+    props: ValidMap<string, AgalRuntime>,
+    args: AgalRuntime[],
+    parent?: AgalClass
+  ): Promise<AgalInstance> {
+    const result = new AgalInstance(props);
+    if (!parent) result.loaded = true;
+    const clase = props.get('__constructor__');
+    if (clase === parent) result.loaded = true;
+    else {
+      const constructor = clase?.get(stack, '__constructor__');
+      await constructor?.call(stack, '__constructor__', result, ...args);
+    }
+    result.type = `Objeto ${
+      clase?.get(stack, 'nombre')?.toString() ?? '<anonimo>'
+    }`;
+    return result;
   }
 }
 export default class AgalClass extends AgalComplex {
@@ -121,6 +122,14 @@ export default class AgalClass extends AgalComplex {
       if (!name) continue;
       if (!prop.value) continue;
       const value = await interpreter(prop.value, envClass, stack);
+      if (name === '__constructor__') {
+        if (this.has(stack, name))
+          return new AgalReferenceError(
+            stack,
+            'No se pueden declarar dos propiedades con el mismo nombre'
+          );
+        this.set(stack, name, value);
+      }
       if (prop.extra === ClassPropertyExtra.Static) {
         if (this.has(stack, name))
           return new AgalReferenceError(
@@ -152,16 +161,18 @@ export default class AgalClass extends AgalComplex {
       return await this.#native.__constructor__(stack, name, self, ...args);
     }
     if (this.#stmt) {
-      const data = await this.load(stack);
-      if (data) return data;
-      return new AgalInstance(stack, this.#props, this.parent);
+      await this.load(stack);
+      return AgalInstance.from(stack, this.#props, args, this.parent);
     }
     return null;
   }
   isInstance(value: AgalRuntime): boolean {
     if (this.#native && this.#native.isInstance(value)) return true;
-    const __constructor__ = value.get(defaultStack, '__constructor__')! as AgalClass;
-    if(!__constructor__) return false;
+    const __constructor__ = value.get(
+      defaultStack,
+      '__constructor__'
+    )! as AgalClass;
+    if (!__constructor__) return false;
     if (__constructor__ === this) return true;
     if (__constructor__.parent === this) return true;
     return false;

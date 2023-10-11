@@ -58,6 +58,9 @@ export default class Enviroment {
     if (!env.variables.has(name)) return new AgalReferenceError(stack, `Variable '${name}' no ha sido declarada`).throw()
     return env.variables.get(name)!;
   }
+  has(name: string, data: Position): boolean {
+    return this.variables.has(name);
+  }
   resolve(name: string, data: Position): Enviroment {
     if (this.variables.has(name)) return this;
     if (this.parent) return this.parent.resolve(name, data);

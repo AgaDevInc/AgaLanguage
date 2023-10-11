@@ -1,0 +1,3 @@
+exportar {
+  servicio: 'wss://gateway.discord.gg/?v=6&encoding=json'
+}

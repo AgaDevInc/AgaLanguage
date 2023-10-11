@@ -37,7 +37,7 @@ const rawApp: ApplicationRaw = {
 			console.log(`Bienvenido a ${name} v${Agal.versions.agal}`);
 			console.log('Para salir usa ctrl+c o salir()');
 			let numberLine = 0;
-			let env = await getModuleScope('<agal>');
+			let env = getModuleScope('<agal>');
 			let stack = defaultStack;
 			while (true) {
 				const [runtime, scope, _stack] = await evalLine(
@@ -115,8 +115,8 @@ const rawApp: ApplicationRaw = {
 
 			if (!existFile(file)) {
 				const error = new AgalReferenceError(
+					defaultStack,
 					`No se encontro el archivo '${file}'`,
-					defaultStack
 				).throw();
 				console.error((await AgalRuntimeToConsole(defaultStack, error)).value??'nulo');
 				return;

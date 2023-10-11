@@ -1,0 +1,18 @@
+importar 'consola' como consola;
+importar 'clases/Cadena' como Cadena;
+fn descomprimir(codigo) {
+  const obj = {}
+  const lineas = Cadena.separar(codigo, '\r\n')
+  def i = 0;
+  mien(lineas.largo > i){
+    const linea = lineas[i]
+    const partes = Cadena.separar(linea, '=')
+    const clave = partes[0]
+    const valor = partes[1]
+    obj[clave] = valor;
+    i = i + 1
+  };
+  ret obj
+}
+
+modulo.exportar = descomprimir

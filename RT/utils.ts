@@ -4,7 +4,8 @@ import AgalFunction from 'magal/RT/values/complex/AgalFunction.ts';
 import { IStack } from 'magal/RT/stack.ts';
 import AgalBoolean from 'magal/RT/values/primitive/AgalBoolean.ts';
 import AgalError, {
-  AgalSyntaxError, AgalTypeError,
+  AgalSyntaxError,
+  AgalTypeError,
 } from 'magal/RT/values/complex/AgalError.ts';
 import typeOf from 'magal/RT/values/typeOf.ts';
 import AgalNull from 'magal/RT/values/primitive/AgalNull.ts';
@@ -121,13 +122,95 @@ export async function AgalRuntimeToAgalNumber(
 }
 export async function AgalRuntimeToConsoleIn(
   stack: IStack,
-  value: AgalRuntime
+  value: AgalRuntime,
+  complexValues: AgalRuntime[] = []
 ): Promise<AgalString | AgalError> {
+  if(complexValues.includes(value)) return AgalString.from('...');
   if (value instanceof AgalComplex) {
+    complexValues.push(value);
     const num = value.get(stack, '__consolaEn__');
     if (num instanceof AgalFunction) {
       const result = await num.call(stack, '__consolaEn__', value);
       if (result instanceof AgalString) return result;
+    }
+    if (value instanceof AgalList) {
+      let data = '[';
+      for (let i = 0; i < value.length; i++) {
+        if (i > 0) data += ', ';
+        if (data.length > 500) {
+          data += `...${value.length - i} mas`;
+          break;
+        }
+        const item = value.get(stack, i.toString())!;
+        if (item instanceof AgalError) return item.throw();
+        const str = await AgalRuntimeToConsoleIn(stack, item, complexValues);
+        if (str instanceof AgalError) return str.throw();
+        data += str.value;
+      }
+      data += ']';
+      if (value.type.startsWith('Objeto'))
+        data = value.type.split(' ')[1] + ' ' + data;
+      return AgalString.from(data);
+    }
+    if (value instanceof AgalClass || value instanceof AgalFunction)
+      return AgalString.from(colorize(value.toString(), FOREGROUND.CYAN));
+    if (value instanceof AgalInstance) {
+      const __constructor__ = value.get(stack, '__constructor__')! as AgalClass;
+      if (__constructor__.parent) {
+        const data = await AgalRuntimeToConsoleIn(stack, __constructor__);
+        if (data instanceof AgalError) return data.throw();
+        let dataObj = '{';
+        const keys = value.keys();
+        const values: string[] = [];
+        for (let i = 0; i < keys.length; i++) {
+          const item = value.get(stack, keys[i])!;
+          if (item instanceof AgalError) return item.throw();
+          const str = await AgalRuntimeToConsoleIn(stack, item, complexValues);
+          if (str instanceof AgalError) return str.throw();
+          values.push(
+            `\n  ${
+              isValidKey(keys[i])
+                ? keys[i]
+                : colorize(Deno.inspect(keys[i]), FOREGROUND.GREEN)
+            }: ${str.value.replaceAll('\n', `\n  `)}`
+          );
+        }
+        dataObj += values.join(',');
+        if (dataObj.length > 1) dataObj += '\n';
+        dataObj += '}';
+        if (value.type.startsWith('Objeto'))
+        dataObj = value.type.split(' ')[1] + dataObj;
+        return AgalString.from(data.value+' '+dataObj);
+      }
+    }
+    if (value instanceof AgalError) {
+      const stack = StackToErrorString(value.stack);
+      const type = colorize(value.name, FOREGROUND.RED);
+      return AgalString.from(`${type}: ${value.message}\n${stack}`);
+    }
+    if (value instanceof AgalDictionary) {
+      let data = '{';
+      const keys = value.keys();
+      const values: string[] = [];
+      for (let i = 0; i < keys.length; i++) {
+        const item = value.get(stack, keys[i])!;
+        if (item instanceof AgalError) return item.throw();
+        const str = await AgalRuntimeToConsoleIn(stack, item, complexValues);
+        if (str instanceof AgalError) return str.throw();
+        values.push(
+          `\n  ${
+            isValidKey(keys[i])
+              ? keys[i]
+              : colorize(Deno.inspect(keys[i]), FOREGROUND.GREEN)
+          }: ${str.value.replaceAll('\n', `\n  `)}`
+        );
+      }
+      data += values.join(',');
+      if (data.length > 1) data += '\n';
+      data += '}';
+      if (value.type.startsWith('Objeto'))
+        data = value.type.split(' ')[1] + data;
+      return AgalString.from(data);
     }
     const data = await AgalRuntimeToAgalString(stack, value);
     if (data instanceof AgalError) return data.throw();
@@ -147,6 +230,58 @@ export async function AgalRuntimeToConsoleIn(
   }
   return await AgalRuntimeToAgalString(stack, value);
 }
+export async function AgalRuntimeToJSON(
+  stack: IStack,
+  value: AgalRuntime
+): Promise<AgalString | AgalError> {
+  if (value instanceof AgalComplex) {
+    const num = value.get(stack, '__json__');
+    if (num instanceof AgalFunction) {
+      const result = await num.call(stack, '__json__', value);
+      if (result instanceof AgalString) return result;
+    }
+    if (value instanceof AgalList) {
+      let data = '[';
+      for (let i = 0; i < value.length; i++) {
+        if (i > 0) data += ', ';
+        const item = value.get(stack, i.toString())!;
+        if (item instanceof AgalError && item.throwned) return item.throw();
+        const str = await AgalRuntimeToJSON(stack, item);
+        if (str instanceof AgalError) return str.throw();
+        data += str.value;
+      }
+      data += ']';
+      return AgalString.from(data);
+    }
+    if (value instanceof AgalDictionary || value instanceof AgalInstance) {
+      let data = '{';
+      const keys = value.keys();
+      const values: string[] = [];
+      for (let i = 0; i < keys.length; i++) {
+        const item = value.get(stack, keys[i])!;
+        if (item instanceof AgalError && item.throwned) return item.throw();
+        const str = await AgalRuntimeToJSON(stack, item);
+        if (str instanceof AgalError) return str.throw();
+        values.push(
+          ` ${
+            Deno.inspect(keys[i])
+          }: ${str.value}`
+        );
+      }
+      data += values.join(',');
+      data += ' }';
+      return AgalString.from(data);
+    }
+  }
+  if (value instanceof AgalPrimitive) {
+    if (value instanceof AgalString || value instanceof AgalBoolean)
+      return AgalString.from(Deno.inspect(value.value));
+    if (value instanceof AgalNumber)
+      return AgalString.from(Deno.inspect(value.real));
+    if (value instanceof AgalNull) return AgalString.from('null');
+  }
+  return await AgalRuntimeToAgalString(stack, value);
+}
 
 function isValidKey(key: string) {
   return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key);
@@ -160,64 +295,6 @@ export async function AgalRuntimeToConsole(
     if (num instanceof AgalFunction) {
       const result = await num.call(stack, '__consola__', value);
       if (result instanceof AgalString) return result;
-    }
-    if (value instanceof AgalClass || value instanceof AgalFunction)
-      return AgalString.from(colorize(value.toString(), FOREGROUND.CYAN));
-    if (value instanceof AgalList) {
-      let data = '[';
-      for (let i = 0; i < value.length; i++) {
-        if (i > 0) data += ', ';
-        if (data.length > 50) {
-          data += `...${value.length - i} mas`;
-          break;
-        }
-        const item = value.get(stack, i.toString())!;
-        if (item instanceof AgalError) return item.throw();
-        const str = await AgalRuntimeToConsoleIn(stack, item);
-        if (str instanceof AgalError) return str.throw();
-        data += str.value;
-      }
-      data += ']';
-      if (value.type.startsWith('Objeto'))
-        data = value.type.split(' ')[1] + ' ' + data;
-      return AgalString.from(data);
-    }
-    if (value instanceof AgalDictionary) {
-      let data = '{';
-      const keys = value.keys();
-      for (let i = 0; i < keys.length; i++) {
-        if (i > 0) data += ', ';
-        if (data.length > 50) {
-          data += `...${keys.length - i} mas`;
-          break;
-        }
-        const item = value.get(stack, keys[i])!;
-        if (item instanceof AgalError) return item.throw();
-        const str = await AgalRuntimeToConsoleIn(stack, item);
-        if (str instanceof AgalError) return str.throw();
-        data += `${
-          isValidKey(keys[i])
-            ? keys[i]
-            : colorize(Deno.inspect(keys[i]), FOREGROUND.GREEN)
-        }: ${str.value}`;
-      }
-      data += '}';
-      if (value.type.startsWith('Objeto'))
-        data = value.type.split(' ')[1] + data;
-      return AgalString.from(data);
-    }
-    if (value instanceof AgalInstance){
-      const __constructor__ = value.get(stack, '__constructor__')! as AgalClass;
-      if(__constructor__.parent){
-        const data = await AgalRuntimeToConsole(stack, __constructor__);
-        if (data instanceof AgalError) return data.throw();
-        return data;
-      }
-    }
-    if (value instanceof AgalError) {
-      const stack = StackToErrorString(value.stack);
-      const type = colorize(value.name, FOREGROUND.RED);
-      return AgalString.from(`${type}: ${value.message}\n${stack}`);
     }
   }
   if (value instanceof AgalString) return value;
@@ -495,6 +572,71 @@ export async function AgalRuntimeWithEquals(
 
   return AgalBoolean.from(left === right);
 }
+export async function AgalRuntimeWithGreater(
+  stack: IStack,
+  left: AgalRuntime,
+  right: AgalRuntime
+) {
+  if (left instanceof AgalComplex) {
+    const num = left.get(stack, '__mayor__');
+    if (num instanceof AgalFunction) {
+      const result = await num.call(stack, '__mayor__', left, right);
+      if (result instanceof AgalBoolean) return result;
+      return new AgalTypeError(
+        stack,
+        `Se esperaba un Booleano pero se recibio un "${typeOf(
+          result || AgalNull.from(true)
+        )}"`
+      ).throw();
+    }
+  }
+  const leftNumber = await AgalRuntimeToAgalNumber(stack, left);
+  if (leftNumber instanceof AgalError) return leftNumber.throw();
+  const rightNumber = await AgalRuntimeToAgalNumber(stack, right);
+  if (rightNumber instanceof AgalError) return rightNumber.throw();
+  if(leftNumber.real > rightNumber.real) return AgalBoolean.from(true);
+  if(leftNumber.real == rightNumber.real && leftNumber.imaginary > leftNumber.imaginary) return AgalBoolean.from(false);
+  return AgalBoolean.from(false);
+}
+export async function AgalRuntimeWithGreaterOrEqual(
+  stack: IStack,
+  left: AgalRuntime,
+  right: AgalRuntime
+) {
+  if (left instanceof AgalComplex) {
+    const num = left.get(stack, '__mayorOigual__');
+    if (num instanceof AgalFunction) {
+      const result = await num.call(stack, '__mayorOigual__', left, right);
+      if (result instanceof AgalBoolean) return result;
+      return new AgalTypeError(
+        stack,
+        `Se esperaba un Booleano pero se recibio un "${typeOf(
+          result || AgalNull.from(true)
+        )}"`
+      ).throw();
+    }
+  }
+  const isGreater = await AgalRuntimeWithGreater(stack, left, right);
+  if (isGreater instanceof AgalError) return isGreater.throw();
+  if(isGreater.value) return AgalBoolean.from(true);
+  const isEqual = await AgalRuntimeWithEquals(stack, left, right);
+  if (isEqual instanceof AgalError) return isEqual.throw();
+  return isEqual;
+}
+export async function AgalRuntimeWithLess(
+  stack: IStack,
+  left: AgalRuntime,
+  right: AgalRuntime
+) {
+  return await AgalRuntimeWithGreater(stack, right, left);
+}
+export async function AgalRuntimeWithLessOrEqual(
+  stack: IStack,
+  left: AgalRuntime,
+  right: AgalRuntime
+) {
+  return await AgalRuntimeWithGreaterOrEqual(stack, right, left);
+}
 
 export async function AgalRuntimeWithBinary(
   stack: IStack,
@@ -517,12 +659,32 @@ export async function AgalRuntimeWithBinary(
   if (operator === '|') result = await AgalRuntimeWithOr(stack, left, right);
   if (operator === '==')
     result = await AgalRuntimeWithEquals(stack, left, right);
-  if (operator === '!='){
+  if (operator === '!=') {
     const result = await AgalRuntimeWithEquals(stack, left, right);
-    if(result instanceof AgalError) return result.throw();
+    if (result instanceof AgalError) return result.throw();
     return AgalBoolean.from(!result.value);
   }
-  if(result) return result;
+  if(operator === '>') {
+    const result = await AgalRuntimeWithGreater(stack, left, right);
+    if (result instanceof AgalError) return result.throw();
+    return result;
+  }
+  if(operator === '>=') {
+    const result = await AgalRuntimeWithGreaterOrEqual(stack, left, right);
+    if (result instanceof AgalError) return result.throw();
+    return result;
+  }
+  if(operator === '<') {
+    const result = await AgalRuntimeWithLess(stack, left, right);
+    if (result instanceof AgalError) return result.throw();
+    return result;
+  }
+  if(operator === '<=') {
+    const result = await AgalRuntimeWithLessOrEqual(stack, left, right);
+    if (result instanceof AgalError) return result.throw();
+    return result;
+  }
+  if (result) return result;
   if (operator === '===') return AgalBoolean.from(left === right);
   if (operator === '!==') return AgalBoolean.from(left !== right);
   return new AgalSyntaxError(
@@ -585,7 +747,7 @@ export function StmtToString(stmt: Stmt): string {
     case BLOCK_TYPE.IF_STATEMENT: {
       const condition = StmtToString(stmt.condition);
       let data = `si (${condition}) { ... }`;
-      if (stmt.else) data += ` ent { ... }`;
+      if (stmt.else.body.length) data += ` ent { ... }`;
       return data;
     }
     case BLOCK_TYPE.WHILE_STATEMENT:
@@ -626,7 +788,7 @@ export function StmtToString(stmt: Stmt): string {
 
 export function StackToErrorString(stack: IStack): string {
   let str = '\tEn ';
-  if (stack.value === null) return '';
+  if (!stack.value) return '';
   if (stack.value.kind === BLOCK_TYPE.PROGRAM) return '';
   str += StmtToString(stack.value);
   return (

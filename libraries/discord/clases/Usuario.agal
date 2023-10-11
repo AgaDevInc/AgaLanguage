@@ -1,0 +1,12 @@
+clase Usuario{
+  __constructor__(data){
+    este.nombre = data.username;
+    este.id = data.id;
+    este.avatar = data.avatar;
+    este.discriminador = data.discriminator;
+    este.nombreGlobal = data.global_name
+    este.bot = !!data.bot;
+    este.verified = !!data.verified;
+  }
+}
+modulo.exportar = Usuario;

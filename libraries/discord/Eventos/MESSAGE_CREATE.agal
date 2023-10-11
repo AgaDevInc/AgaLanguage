@@ -1,0 +1,5 @@
+importar 'consola' como consola;
+fn message_create(cliente, obj){
+  consola.pintar(cliente, obj);
+}
+modulo.exportar = message_create;

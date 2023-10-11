@@ -1,0 +1,18 @@
+importar 'consola' como consola;
+
+importar 'sab' como sab;
+importar 'clases/Cadena' como Cadena;
+
+const env = sab.leerArchivo('.env')
+const test = Cadena(env);
+importar './libraries/env/inicial.agal' como envFN;
+
+const Data = envFN(test)
+
+importar './libraries/discord/cliente/Cliente.agal' como DiscordCliente;
+
+const cliente = DiscordCliente()
+cliente.en('listo', fn (usuario) {
+  consola.pintar(usuario.nombre, 'listo!')
+})
+cliente.sesion(Data.TOKEN);

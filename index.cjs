@@ -3035,6 +3035,9 @@ class Enviroment {
         if (!env.variables.has(name)) return new AgalReferenceError(stack, `Variable '${name}' no ha sido declarada`).throw();
         return env.variables.get(name);
     }
+    has(name, data) {
+        return this.variables.has(name);
+    }
     resolve(name, data) {
         if (this.variables.has(name)) return this;
         if (this.parent) return this.parent.resolve(name, data);
@@ -3172,6 +3175,13 @@ class AgalDictionary extends AgalComplex {
         return res;
     }
 }
+function parseComplex(data) {
+    if (data instanceof AgalComplex) return data;
+    if (typeof data === 'function') return new AgalFunction(defaultStack, data.name || '<anonima>', data);
+    if (Array.isArray(data)) return AgalList.from(data);
+    return AgalDictionary.from(data);
+}
+const unparse = (data)=>parseComplex(data) || parse(data);
 async function interpreter(node, env, stack) {
     if (!node) return AgalNull.from(true);
     if (Array.isArray(node)) {
@@ -3183,8 +3193,8 @@ async function interpreter(node, env, stack) {
                 next: stack
             };
             result = await interpreter(Node, env, Stack);
+            if (result instanceof AgalError && result.throwned) return result;
             if (Node.kind === 'ReturnStatement') return result;
-            if (result instanceof AgalError) return result;
         }
         return AgalNull.from(true);
     }
@@ -3257,7 +3267,6 @@ class AgalFunction extends AgalComplex {
         }
         this.set(stack, 'nombre', AgalString.from(name));
     }
-    set type(value) {}
     get type() {
         return `Función ${this.get(defaultStack, 'nombre')?.toString() ?? '<anonima>'}`;
     }
@@ -3269,13 +3278,20 @@ class AgalFunction extends AgalComplex {
             const { env, stmt } = this.stmt;
             if (stmt.body.length === 0) return null;
             const newEnv = env.createChild();
-            newEnv.set('este', stack, self, stmt);
+            newEnv.set('este', stack, self, {
+                col: stmt.col,
+                row: stmt.row,
+                constant: true,
+                keyword: true
+            });
             for(let i = 0; i < stmt.params.length; i++){
                 const param = stmt.params[i];
                 if (typeof param === 'string') {
                     newEnv.set(param, stack, args.shift() ?? AgalNull.from(), stmt);
                 } else {
-                    newEnv.set(param.identifier, stack, args.shift() ?? AgalNull.from(), stmt);
+                    const exists = newEnv.has(param.identifier, stmt);
+                    if (exists) return new AgalReferenceError(stack, `Parametro '${param.identifier}' ya ha sido declarado`).throw();
+                    newEnv.set(param.identifier, stack, __default(args), stmt);
                 }
             }
             const result = await interpreter(stmt.body, newEnv, stack);
@@ -3287,13 +3303,6 @@ class AgalFunction extends AgalComplex {
         return new AgalFunction(defaultStack, config.name || '<anonima>', config);
     }
 }
-function parseComplex(data) {
-    if (data instanceof AgalComplex) return data;
-    if (typeof data === 'function') return new AgalFunction(defaultStack, data.name || '<anonima>', data);
-    if (Array.isArray(data)) return AgalList.from(data);
-    return AgalDictionary.from(data);
-}
-const unparse = (data)=>parseComplex(data) || parse(data);
 function string(node, _env, _stack) {
     return AgalString.from(node.value);
 }
@@ -3303,32 +3312,34 @@ function isNativeConfig(config) {
 class AgalInstance extends AgalComplex {
     props;
     type;
-    #loaded;
-    constructor(stack, props, parent){
+    loaded;
+    constructor(props){
         super();
         this.props = props;
-        this.#loaded = false;
-        if (!parent) this.#loaded = true;
-        const constructor = props.get('__constructor__');
-        if (constructor === parent) this.#loaded = true;
-        else {
-            const call = constructor?.call;
-            if (call) constructor.call = (stack, name, self, ...args)=>{
-                this.#loaded = true;
-                return call.call(constructor, stack, name, self, ...args);
-            };
-        }
-        this.type = `Objeto ${constructor?.get(stack, 'nombre')?.toString() ?? '<anonimo>'}`;
+        this.type = 'Objeto';
+        this.loaded = false;
     }
     _set(stack, key, value) {
         return super.set(stack, key, value);
     }
     set(stack, key, value) {
-        if (!this.#loaded) return new AgalReferenceError(stack, 'No se puede modificar un objeto antes de que se cargue').throw();
+        if (!this.loaded) return new AgalReferenceError(stack, 'No se puede modificar un objeto antes de que se cargue').throw();
         return this._set(stack, key, value);
     }
     get(stack, key) {
         return super.get(stack, key) || this.props.get(key) || null;
+    }
+    static async from(stack, props, args, parent) {
+        const result = new AgalInstance(props);
+        if (!parent) result.loaded = true;
+        const clase = props.get('__constructor__');
+        if (clase === parent) result.loaded = true;
+        else {
+            const constructor = clase?.get(stack, '__constructor__');
+            await constructor?.call(stack, '__constructor__', result, ...args);
+        }
+        result.type = `Objeto ${clase?.get(stack, 'nombre')?.toString() ?? '<anonimo>'}`;
+        return result;
     }
 }
 class AgalClass extends AgalComplex {
@@ -3374,6 +3385,10 @@ class AgalClass extends AgalComplex {
             if (!name) continue;
             if (!prop.value) continue;
             const value = await interpreter(prop.value, envClass, stack);
+            if (name === '__constructor__') {
+                if (this.has(stack, name)) return new AgalReferenceError(stack, 'No se pueden declarar dos propiedades con el mismo nombre');
+                this.set(stack, name, value);
+            }
             if (prop.extra === ClassPropertyExtra.Static) {
                 if (this.has(stack, name)) return new AgalReferenceError(stack, 'No se pueden declarar dos propiedades estaticas con el mismo nombre');
                 this.set(stack, name, value);
@@ -3391,9 +3406,8 @@ class AgalClass extends AgalComplex {
             return await this.#native.__constructor__(stack, name, self, ...args);
         }
         if (this.#stmt) {
-            const data = await this.load(stack);
-            if (data) return data;
-            return new AgalInstance(stack, this.#props, this.parent);
+            await this.load(stack);
+            return AgalInstance.from(stack, this.#props, args, this.parent);
         }
         return null;
     }
@@ -3717,7 +3731,7 @@ async function assignment(node, env, stack) {
     if (node.assignee.kind === EXPRESSIONS_TYPE.MEMBER_EXPR) {
         const obj = await interpreter(node.assignee.object, env, stack);
         if (obj instanceof AgalError && obj.throwned) return obj;
-        if (node.assignee.property.kind === 'Identifier') return obj.set(stack, node.assignee.property.symbol, val);
+        if (node.assignee.property.kind === 'Identifier' && !node.assignee.computed) return obj.set(stack, node.assignee.property.symbol, val);
         const preKey = await interpreter(node.assignee.property, env, stack);
         if (preKey instanceof AgalError && preKey.throwned) return preKey.throw();
         const key = await AgalRuntimeToAgalString(stack, preKey);
@@ -3747,7 +3761,7 @@ async function call(call, env, stack) {
 async function member(node, env, stack) {
     const obj = await interpreter(node.object, env, stack);
     if (obj instanceof AgalError && obj.throwned) return obj;
-    if (node.property.kind === LITERALS_TYPE.IDENTIFIER) return obj.get(stack, node.property.symbol) || AgalNull.from(true);
+    if (node.property.kind === LITERALS_TYPE.IDENTIFIER && node.computed === false) return obj.get(stack, node.property.symbol) || AgalNull.from(true);
     const preKey = await interpreter(node.property, env, stack);
     if (preKey instanceof AgalError && preKey.throwned) return preKey.throw();
     const key = await AgalRuntimeToAgalString(stack, preKey);
@@ -3821,12 +3835,77 @@ async function AgalRuntimeToAgalNumber(stack, value) {
     }
     return new AgalError(stack, `Se esperaba un Numero pero se recibio un "${typeOf2(value || AgalNull.from(true))}"`).throw();
 }
-async function AgalRuntimeToConsoleIn(stack, value) {
+async function AgalRuntimeToConsoleIn(stack, value, complexValues = []) {
+    if (complexValues.includes(value)) return AgalString.from('...');
     if (value instanceof AgalComplex) {
+        complexValues.push(value);
         const num = value.get(stack, '__consolaEn__');
         if (num instanceof AgalFunction) {
             const result = await num.call(stack, '__consolaEn__', value);
             if (result instanceof AgalString) return result;
+        }
+        if (value instanceof AgalList) {
+            let data = '[';
+            for(let i = 0; i < value.length; i++){
+                if (i > 0) data += ', ';
+                if (data.length > 500) {
+                    data += `...${value.length - i} mas`;
+                    break;
+                }
+                const item = value.get(stack, i.toString());
+                if (item instanceof AgalError) return item.throw();
+                const str = await AgalRuntimeToConsoleIn(stack, item, complexValues);
+                if (str instanceof AgalError) return str.throw();
+                data += str.value;
+            }
+            data += ']';
+            if (value.type.startsWith('Objeto')) data = value.type.split(' ')[1] + ' ' + data;
+            return AgalString.from(data);
+        }
+        if (value instanceof AgalClass || value instanceof AgalFunction) return AgalString.from(colorize(value.toString(), FOREGROUND.CYAN));
+        if (value instanceof AgalInstance) {
+            const __constructor__ = value.get(stack, '__constructor__');
+            if (__constructor__.parent) {
+                const data = await AgalRuntimeToConsoleIn(stack, __constructor__);
+                if (data instanceof AgalError) return data.throw();
+                let dataObj = '{';
+                const keys = value.keys();
+                const values = [];
+                for(let i = 0; i < keys.length; i++){
+                    const item = value.get(stack, keys[i]);
+                    if (item instanceof AgalError) return item.throw();
+                    const str = await AgalRuntimeToConsoleIn(stack, item, complexValues);
+                    if (str instanceof AgalError) return str.throw();
+                    values.push(`\n  ${isValidKey(keys[i]) ? keys[i] : colorize(Deno.inspect(keys[i]), FOREGROUND.GREEN)}: ${str.value.replaceAll('\n', `\n  `)}`);
+                }
+                dataObj += values.join(',');
+                if (dataObj.length > 1) dataObj += '\n';
+                dataObj += '}';
+                if (value.type.startsWith('Objeto')) dataObj = value.type.split(' ')[1] + data;
+                return AgalString.from(data.value + ' ' + dataObj);
+            }
+        }
+        if (value instanceof AgalError) {
+            const stack = StackToErrorString(value.stack);
+            const type = colorize(value.name, FOREGROUND.RED);
+            return AgalString.from(`${type}: ${value.message}\n${stack}`);
+        }
+        if (value instanceof AgalDictionary) {
+            let data = '{';
+            const keys = value.keys();
+            const values = [];
+            for(let i = 0; i < keys.length; i++){
+                const item = value.get(stack, keys[i]);
+                if (item instanceof AgalError) return item.throw();
+                const str = await AgalRuntimeToConsoleIn(stack, item, complexValues);
+                if (str instanceof AgalError) return str.throw();
+                values.push(`\n  ${isValidKey(keys[i]) ? keys[i] : colorize(Deno.inspect(keys[i]), FOREGROUND.GREEN)}: ${str.value.replaceAll('\n', `\n  `)}`);
+            }
+            data += values.join(',');
+            if (data.length > 1) data += '\n';
+            data += '}';
+            if (value.type.startsWith('Objeto')) data = value.type.split(' ')[1] + data;
+            return AgalString.from(data);
         }
         const data = await AgalRuntimeToAgalString(stack, value);
         if (data instanceof AgalError) return data.throw();
@@ -3839,6 +3918,49 @@ async function AgalRuntimeToConsoleIn(stack, value) {
     }
     return await AgalRuntimeToAgalString(stack, value);
 }
+async function AgalRuntimeToJSON(stack, value) {
+    if (value instanceof AgalComplex) {
+        const num = value.get(stack, '__json__');
+        if (num instanceof AgalFunction) {
+            const result = await num.call(stack, '__json__', value);
+            if (result instanceof AgalString) return result;
+        }
+        if (value instanceof AgalList) {
+            let data = '[';
+            for(let i = 0; i < value.length; i++){
+                if (i > 0) data += ', ';
+                const item = value.get(stack, i.toString());
+                if (item instanceof AgalError && item.throwned) return item.throw();
+                const str = await AgalRuntimeToJSON(stack, item);
+                if (str instanceof AgalError) return str.throw();
+                data += str.value;
+            }
+            data += ']';
+            return AgalString.from(data);
+        }
+        if (value instanceof AgalDictionary || value instanceof AgalInstance) {
+            let data = '{';
+            const keys = value.keys();
+            const values = [];
+            for(let i = 0; i < keys.length; i++){
+                const item = value.get(stack, keys[i]);
+                if (item instanceof AgalError && item.throwned) return item.throw();
+                const str = await AgalRuntimeToJSON(stack, item);
+                if (str instanceof AgalError) return str.throw();
+                values.push(` ${Deno.inspect(keys[i])}: ${str.value}`);
+            }
+            data += values.join(',');
+            data += ' }';
+            return AgalString.from(data);
+        }
+    }
+    if (value instanceof AgalPrimitive) {
+        if (value instanceof AgalString || value instanceof AgalBoolean) return AgalString.from(Deno.inspect(value.value));
+        if (value instanceof AgalNumber) return AgalString.from(Deno.inspect(value.real));
+        if (value instanceof AgalNull) return AgalString.from('null');
+    }
+    return await AgalRuntimeToAgalString(stack, value);
+}
 function isValidKey(key) {
     return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key);
 }
@@ -3848,57 +3970,6 @@ async function AgalRuntimeToConsole(stack, value) {
         if (num instanceof AgalFunction) {
             const result = await num.call(stack, '__consola__', value);
             if (result instanceof AgalString) return result;
-        }
-        if (value instanceof AgalClass || value instanceof AgalFunction) return AgalString.from(colorize(value.toString(), FOREGROUND.CYAN));
-        if (value instanceof AgalList) {
-            let data = '[';
-            for(let i = 0; i < value.length; i++){
-                if (i > 0) data += ', ';
-                if (data.length > 50) {
-                    data += `...${value.length - i} mas`;
-                    break;
-                }
-                const item = value.get(stack, i.toString());
-                if (item instanceof AgalError) return item.throw();
-                const str = await AgalRuntimeToConsoleIn(stack, item);
-                if (str instanceof AgalError) return str.throw();
-                data += str.value;
-            }
-            data += ']';
-            if (value.type.startsWith('Objeto')) data = value.type.split(' ')[1] + ' ' + data;
-            return AgalString.from(data);
-        }
-        if (value instanceof AgalDictionary) {
-            let data = '{';
-            const keys = value.keys();
-            for(let i = 0; i < keys.length; i++){
-                if (i > 0) data += ', ';
-                if (data.length > 50) {
-                    data += `...${keys.length - i} mas`;
-                    break;
-                }
-                const item = value.get(stack, keys[i]);
-                if (item instanceof AgalError) return item.throw();
-                const str = await AgalRuntimeToConsoleIn(stack, item);
-                if (str instanceof AgalError) return str.throw();
-                data += `${isValidKey(keys[i]) ? keys[i] : colorize(Deno.inspect(keys[i]), FOREGROUND.GREEN)}: ${str.value}`;
-            }
-            data += '}';
-            if (value.type.startsWith('Objeto')) data = value.type.split(' ')[1] + data;
-            return AgalString.from(data);
-        }
-        if (value instanceof AgalInstance) {
-            const __constructor__ = value.get(stack, '__constructor__');
-            if (__constructor__.parent) {
-                const data = await AgalRuntimeToConsole(stack, __constructor__);
-                if (data instanceof AgalError) return data.throw();
-                return data;
-            }
-        }
-        if (value instanceof AgalError) {
-            const stack = StackToErrorString(value.stack);
-            const type = colorize(value.name, FOREGROUND.RED);
-            return AgalString.from(`${type}: ${value.message}\n${stack}`);
         }
     }
     if (value instanceof AgalString) return value;
@@ -4103,6 +4174,45 @@ async function AgalRuntimeWithEquals(stack, left, right) {
     }
     return AgalBoolean.from(left === right);
 }
+async function AgalRuntimeWithGreater(stack, left, right) {
+    if (left instanceof AgalComplex) {
+        const num = left.get(stack, '__mayor__');
+        if (num instanceof AgalFunction) {
+            const result = await num.call(stack, '__mayor__', left, right);
+            if (result instanceof AgalBoolean) return result;
+            return new AgalTypeError(stack, `Se esperaba un Booleano pero se recibio un "${typeOf2(result || AgalNull.from(true))}"`).throw();
+        }
+    }
+    const leftNumber = await AgalRuntimeToAgalNumber(stack, left);
+    if (leftNumber instanceof AgalError) return leftNumber.throw();
+    const rightNumber = await AgalRuntimeToAgalNumber(stack, right);
+    if (rightNumber instanceof AgalError) return rightNumber.throw();
+    if (leftNumber.real > rightNumber.real) return AgalBoolean.from(true);
+    if (leftNumber.real == rightNumber.real && leftNumber.imaginary > leftNumber.imaginary) return AgalBoolean.from(false);
+    return AgalBoolean.from(false);
+}
+async function AgalRuntimeWithGreaterOrEqual(stack, left, right) {
+    if (left instanceof AgalComplex) {
+        const num = left.get(stack, '__mayorOigual__');
+        if (num instanceof AgalFunction) {
+            const result = await num.call(stack, '__mayorOigual__', left, right);
+            if (result instanceof AgalBoolean) return result;
+            return new AgalTypeError(stack, `Se esperaba un Booleano pero se recibio un "${typeOf2(result || AgalNull.from(true))}"`).throw();
+        }
+    }
+    const isGreater = await AgalRuntimeWithGreater(stack, left, right);
+    if (isGreater instanceof AgalError) return isGreater.throw();
+    if (isGreater.value) return AgalBoolean.from(true);
+    const isEqual = await AgalRuntimeWithEquals(stack, left, right);
+    if (isEqual instanceof AgalError) return isEqual.throw();
+    return isEqual;
+}
+async function AgalRuntimeWithLess(stack, left, right) {
+    return await AgalRuntimeWithGreater(stack, right, left);
+}
+async function AgalRuntimeWithLessOrEqual(stack, left, right) {
+    return await AgalRuntimeWithGreaterOrEqual(stack, right, left);
+}
 async function AgalRuntimeWithBinary(stack, left, operator, right) {
     let result;
     if (operator === '+') result = await AgalRuntimeWithAddition(stack, left, right);
@@ -4117,6 +4227,26 @@ async function AgalRuntimeWithBinary(stack, left, operator, right) {
         const result = await AgalRuntimeWithEquals(stack, left, right);
         if (result instanceof AgalError) return result.throw();
         return AgalBoolean.from(!result.value);
+    }
+    if (operator === '>') {
+        const result = await AgalRuntimeWithGreater(stack, left, right);
+        if (result instanceof AgalError) return result.throw();
+        return result;
+    }
+    if (operator === '>=') {
+        const result = await AgalRuntimeWithGreaterOrEqual(stack, left, right);
+        if (result instanceof AgalError) return result.throw();
+        return result;
+    }
+    if (operator === '<') {
+        const result = await AgalRuntimeWithLess(stack, left, right);
+        if (result instanceof AgalError) return result.throw();
+        return result;
+    }
+    if (operator === '<=') {
+        const result = await AgalRuntimeWithLessOrEqual(stack, left, right);
+        if (result instanceof AgalError) return result.throw();
+        return result;
     }
     if (result) return result;
     if (operator === '===') return AgalBoolean.from(left === right);
@@ -4182,7 +4312,7 @@ function StmtToString(stmt) {
             {
                 const condition = StmtToString(stmt.condition);
                 let data = `si (${condition}) { ... }`;
-                if (stmt.else) data += ` ent { ... }`;
+                if (stmt.else.body.length) data += ` ent { ... }`;
                 return data;
             }
         case BLOCK_TYPE.WHILE_STATEMENT:
@@ -4223,7 +4353,7 @@ function StmtToString(stmt) {
 }
 function StackToErrorString(stack) {
     let str = '\tEn ';
-    if (stack.value === null) return '';
+    if (!stack.value) return '';
     if (stack.value.kind === BLOCK_TYPE.PROGRAM) return '';
     str += StmtToString(stack.value);
     return str + ` (${colorize(stack.value.file, FOREGROUND.CYAN)}:${colorize(stack.value.row + '', FOREGROUND.YELLOW)}:${colorize(stack.value.col + '', FOREGROUND.YELLOW)})\n` + StackToErrorString(stack.next);
@@ -4244,6 +4374,7 @@ const mod9 = {
     AgalRuntimeToAgalString: AgalRuntimeToAgalString,
     AgalRuntimeToAgalNumber: AgalRuntimeToAgalNumber,
     AgalRuntimeToConsoleIn: AgalRuntimeToConsoleIn,
+    AgalRuntimeToJSON: AgalRuntimeToJSON,
     AgalRuntimeToConsole: AgalRuntimeToConsole,
     AgalRuntimeWithPositive: AgalRuntimeWithPositive,
     AgalRuntimeWithNegative: AgalRuntimeWithNegative,
@@ -4258,6 +4389,10 @@ const mod9 = {
     AgalRuntimeWithAnd: AgalRuntimeWithAnd,
     AgalRuntimeWithOr: AgalRuntimeWithOr,
     AgalRuntimeWithEquals: AgalRuntimeWithEquals,
+    AgalRuntimeWithGreater: AgalRuntimeWithGreater,
+    AgalRuntimeWithGreaterOrEqual: AgalRuntimeWithGreaterOrEqual,
+    AgalRuntimeWithLess: AgalRuntimeWithLess,
+    AgalRuntimeWithLessOrEqual: AgalRuntimeWithLessOrEqual,
     AgalRuntimeWithBinary: AgalRuntimeWithBinary,
     StmtToString: StmtToString,
     StackToErrorString: StackToErrorString
@@ -4360,14 +4495,36 @@ function __default2(register) {
         }));
 }
 function __default3(register) {
-    register.set('clases/Cadena', ()=>new AgalClass('Cadena', {
+    register.set('clases/Cadena', ()=>{
+        const Cadena = new AgalClass('Cadena', {
             __constructor__ (stack, _name, _este, data) {
                 return AgalRuntimeToAgalString(stack, data);
             },
             isInstance (value) {
                 return value instanceof AgalString;
             }
+        });
+        Cadena.set(defaultStack, 'separar', AgalFunction.from((stack, _name, _este, str, sep)=>{
+            if (!(str instanceof AgalString)) {
+                return new AgalTypeError(stack, 'El primer argumento debe ser una cadena').throw();
+            }
+            if (!(sep instanceof AgalString)) {
+                return new AgalTypeError(stack, 'El segundo argumento debe ser una cadena').throw();
+            }
+            return __default(str.value.split(sep.value));
         }));
+        Cadena.set(defaultStack, 'unir', AgalFunction.from((stack, _name, _este, ...args)=>{
+            let result = '';
+            for (const arg of args){
+                if (!(arg instanceof AgalString)) {
+                    return new AgalTypeError(stack, 'Todos los argumentos deben ser cadenas').throw();
+                }
+                result += arg.value;
+            }
+            return __default(result);
+        }));
+        return Cadena;
+    });
 }
 function __default4(register) {
     register.set("clases/Numero", ()=>new AgalClass("Numero", {
@@ -4963,22 +5120,28 @@ class AgalEvents extends AgalComplex {
             return funcion;
         }));
         this.set(defaultStack, 'emitir', AgalFunction.from(async (stack, name, este, evento, ...args)=>{
-            if (!evento) return new AgalTypeError(stack, 'Se esperaba un evento pero se recibió nada');
-            if (!(evento instanceof AgalString)) return new AgalTypeError(stack, 'El evento debe ser una cadena');
+            if (!evento) return new AgalTypeError(stack, 'Se esperaba un evento pero se recibió nada').throw();
+            if (!(evento instanceof AgalString)) return new AgalTypeError(stack, 'El evento debe ser una cadena').throw();
             if (!this.#events[evento.value]) return null;
             for(let i = 0; i < this.#events[evento.value].length; i++){
-                this.#events[evento.value][i].call(stack, name, este, ...args);
+                const data = this.#events[evento.value][i].call(stack, name, este, ...args);
+                if (data instanceof AgalError && data.throwned) return data;
             }
             return null;
         }));
     }
-    emit(evento, ...args) {
+    async emit(evento, ...args) {
         if (!this.#events[evento]) return;
-        for(let i = 0; i < this.#events[evento].length; i++)this.#events[evento][i].call(defaultStack, 'emit', this, ...args.map(__default));
+        for(let i = 0; i < this.#events[evento].length; i++){
+            const data = await this.#events[evento][i].call(defaultStack, 'emitir', this, ...args.map(__default));
+            if (data instanceof AgalError && data.throwned) return data;
+        }
+        return;
     }
     on(evento, funcion) {
         if (!this.#events[evento]) this.#events[evento] = [];
         this.#events[evento].push(funcion);
+        return funcion;
     }
 }
 const __default12 = (register)=>register.set('Eventos', function Eventos() {
@@ -5048,60 +5211,65 @@ class AgalWebSocket extends AgalEvents {
         super();
         this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
         this.set(defaultStack, 'CERRADO', AgalBoolean.from(false));
-        this.set(defaultStack, 'conectar', AgalFunction.from(async (stack, _name, _self, URL1)=>{
-            if (URL1 instanceof AgalString) return await this.connect(URL1.value);
-            else return new AgalTypeError(stack, 'Se esperaba una cadena como URL de conexión');
+        this.set(defaultStack, 'conectar', AgalFunction.from((stack, _name, _self, URL1)=>{
+            if (!(URL1 instanceof AgalString)) return new AgalTypeError(stack, 'Se esperaba una cadena como URL de conexión').throw();
+            return this.connect(stack, URL1.value);
         }));
     }
-    connect(url) {
-        return new Promise((resolve)=>{
-            try {
-                const urlTest = new URL(url);
-                if (urlTest.protocol !== 'ws:' && urlTest.protocol !== 'wss:') resolve(new AgalTypeError(defaultStack, 'Se esperaba una URL con protocolo ws o wss').throw());
-            } catch (_e) {
-                resolve(new AgalTypeError(defaultStack, 'Se esperaba una URL válida').throw());
+    connect(stack, url) {
+        try {
+            const urlTest = new URL(url);
+            if (urlTest.protocol !== 'ws:' && urlTest.protocol !== 'wss:') return new AgalTypeError(stack, 'Se esperaba una URL con protocolo ws o wss').throw();
+        } catch (_e) {
+            return new AgalTypeError(stack, 'Se esperaba una URL válida').throw();
+        }
+        const ws = new Deno._WebSocket(url);
+        ws.onopen = async ()=>{
+            this.set(stack, 'ABIERTO', AgalBoolean.from(true));
+            const data = await this.emit('abrir');
+            if (data instanceof AgalError && data.throwned) return this.emit('error', data.catch());
+        };
+        ws.onclose = async (e)=>{
+            this.set(stack, 'ABIERTO', AgalBoolean.from(false));
+            this.set(stack, 'CERRADO', AgalBoolean.from(true));
+            const data = await this.emit('cerrar', e.code);
+            if (data instanceof AgalError && data.throwned) return this.emit('error', data.catch());
+        };
+        ws.onmessage = async (e)=>{
+            if (typeof e.data === 'string') {
+                const data = await this.emit('mensaje', e.data);
+                if (data instanceof AgalError && data.throwned) return this.emit('error', data.catch());
             }
-            const ws = new Deno._WebSocket(url);
-            ws.onopen = ()=>{
-                this.set(defaultStack, 'enviar', AgalFunction.from((stack, _name, _self, mensaje)=>{
-                    if (mensaje instanceof AgalString) ws.send(mensaje.value);
-                    else if (mensaje instanceof AgalIntArray) ws.send(new Uint8Array(mensaje));
-                    else return new AgalTypeError(stack, 'Se esperaba una cadena o una ListaEnteros como mensaje');
-                    return null;
-                }));
-                this.set(defaultStack, 'desconectar', AgalFunction.from((_stack, _name, _self)=>{
-                    ws.close();
-                    return null;
-                }));
-                this.set(defaultStack, 'ABIERTO', AgalBoolean.from(true));
-                this.emit('abrir');
-                resolve(null);
-            };
-            ws.onclose = (e)=>{
-                this.set(defaultStack, 'ABIERTO', AgalBoolean.from(false));
-                this.set(defaultStack, 'CERRADO', AgalBoolean.from(true));
-                this.emit('cerrar', e.code, e.reason);
-                resolve(null);
-            };
-            ws.onmessage = async (e)=>{
-                if (typeof e.data === 'string') this.emit('mensaje', e.data);
-                if (e.data instanceof ArrayBuffer) {
-                    const buffer = new Uint8Array(e.data);
-                    this.emit('mensaje', AgalIntArray.from(buffer));
-                }
-                if (e.data instanceof Blob) {
-                    const buffer = new Uint8Array(await e.data.arrayBuffer());
-                    this.emit('mensaje', AgalIntArray.from(buffer));
-                }
-            };
-            ws.onerror = (e)=>{
-                const code = getCodeFromTextError(e.message);
-                const message = getMessageFromCode(code);
-                const error = new AgalError(defaultStack, message);
-                this.emit('error', error);
-                resolve(null);
-            };
-        });
+            if (e.data instanceof ArrayBuffer) {
+                const buffer = new Uint8Array(e.data);
+                const data = await this.emit('mensaje', AgalIntArray.from(buffer));
+                if (data instanceof AgalError && data.throwned) return this.emit('error', data.catch());
+            }
+            if (e.data instanceof Blob) {
+                const buffer = new Uint8Array(await e.data.arrayBuffer());
+                const data = await this.emit('mensaje', AgalIntArray.from(buffer));
+                if (data instanceof AgalError && data.throwned) return this.emit('error', data.catch());
+            }
+        };
+        ws.onerror = (e)=>{
+            const code = getCodeFromTextError(e.message);
+            const message = getMessageFromCode(code);
+            const error = new AgalError(stack, message);
+            this.emit('error', error);
+        };
+        this.set(stack, 'enviar', AgalFunction.from((stack, _name, _self, mensaje)=>{
+            if (this.get(stack, 'CERRADO').value) return new AgalTypeError(stack, 'La conexión está cerrada').throw();
+            if (!this.get(stack, 'ABIERTO').value) return new AgalTypeError(stack, 'No se ha establecido la conexión').throw();
+            if (mensaje instanceof AgalString) ws.send(mensaje.value);
+            else if (mensaje instanceof AgalIntArray) ws.send(new Uint8Array(mensaje));
+            else return new AgalTypeError(stack, 'Se esperaba una cadena o una ListaEnteros como mensaje');
+            return null;
+        }));
+        this.set(stack, 'desconectar', AgalFunction.from((_stack, _name, _self)=>{
+            ws.close();
+            return null;
+        }));
+        return null;
     }
     static from() {
         return new AgalWebSocket();
@@ -5115,6 +5283,64 @@ function __default15(register) {
         });
     });
 }
+function __default16(register) {
+    register.set('JSON', ()=>{
+        const JSON1 = new AgalDictionary();
+        JSON1.set(defaultStack, 'comprimir', AgalFunction.from(async (stack, _name, _self, data)=>{
+            try {
+                const v = await AgalRuntimeToJSON(stack, data);
+                if (v instanceof AgalError) return v.throw();
+                return v;
+            } catch (_e) {
+                return new AgalTypeError(stack, 'No se pudo convertir en json').throw();
+            }
+        }));
+        JSON1.set(defaultStack, 'descomprimir', AgalFunction.from((stack, _name, _self, data)=>{
+            if (!(data instanceof AgalString)) return new AgalTypeError(stack, 'Se esperaba una cadena de texto').throw();
+            const json = globalThis.JSON.parse(data.value);
+            return __default(json);
+        }));
+        return JSON1;
+    });
+}
+const __default17 = (register)=>{
+    register.set('tiempos', ()=>{
+        const mod = new AgalDictionary();
+        mod.set(defaultStack, 'intervalo', new AgalFunction(defaultStack, 'tiempos.intervalo', (stack, name, este, funcion, milisegundos)=>{
+            if (!(funcion instanceof AgalFunction)) return new AgalTypeError(stack, `La funcion debe ser una funcion`);
+            if (!(milisegundos instanceof AgalNumber)) return new AgalTypeError(stack, `El tiempo debe ser un numero`);
+            const intervalo = setInterval(async ()=>{
+                const data = await funcion.call(stack, name, este);
+                if (data instanceof AgalError && data.throwned) {
+                    clearInterval(intervalo);
+                    const log = await AgalRuntimeToConsole(stack, data);
+                    console.log(log.value);
+                }
+            }, milisegundos.real);
+            return new AgalFunction(defaultStack, 'tiempos.intervalo().cancelar', ()=>{
+                clearInterval(intervalo);
+                return null;
+            });
+        }));
+        mod.set(defaultStack, 'pasando', new AgalFunction(defaultStack, 'tiempos.timeout', (stack, name, este, funcion, milisegundos)=>{
+            if (!(funcion instanceof AgalFunction)) return new AgalTypeError(stack, `La funcion debe ser una funcion`);
+            if (!(milisegundos instanceof AgalNumber)) return new AgalTypeError(stack, `El tiempo debe ser un numero`);
+            const pasando = setTimeout(async ()=>{
+                const data = await funcion.call(stack, name, este);
+                if (data instanceof AgalError && data.throwned) {
+                    clearTimeout(pasando);
+                    const log = await AgalRuntimeToConsole(stack, data);
+                    console.log(log.value);
+                }
+            }, milisegundos.real);
+            return new AgalFunction(defaultStack, 'tiempos.pasando().cancelar', ()=>{
+                clearTimeout(pasando);
+                return null;
+            });
+        }));
+        return mod;
+    });
+};
 function getModule(path) {
     const module = new AgalDictionary();
     const splitPath = path.split(/[\\\/]/g);
@@ -5132,7 +5358,7 @@ function getModule(path) {
     return module;
 }
 function getModuleScope(path) {
-    const data = getGlobalScope();
+    const data = getGlobalScope().createChild();
     const modulo = getModule(path);
     data.set('importar', defaultStack, modulo.get(defaultStack, 'importar'), {
         col: 0,
@@ -5173,7 +5399,7 @@ async function AgalEval(code) {
     const program = parser.produceAST(code, false, '<nativo>');
     return await interpreter(program.body, getGlobalScope(), defaultStack);
 }
-function __default16(register) {
+function __default18(register) {
     register.set('clases/Funcion', ()=>new AgalClass('Funcion', {
             __constructor__ (stack, _name, _este, ...argums) {
                 const [code, ...args] = argums.reverse();
@@ -5189,9 +5415,9 @@ function __default16(register) {
             }
         }));
 }
-function __default17(register) {
+function __default19(register) {
     __default1(register);
-    __default16(register);
+    __default18(register);
     __default2(register);
     __default3(register);
     __default4(register);
@@ -5217,8 +5443,10 @@ __default11(__default7);
 __default12(__default7);
 __default13(__default7);
 __default14(__default7);
-__default17(__default7);
+__default19(__default7);
 __default15(__default7);
+__default16(__default7);
+__default17(__default7);
 function resolve(path) {
     const pathArray = path.split(/[\\|\/]/).filter(Boolean);
     const PATH = [];

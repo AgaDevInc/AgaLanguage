@@ -6,6 +6,8 @@ import AgalString from 'magal/RT/values/primitive/AgalString.ts';
 import Enviroment from 'magal/RT/Enviroment.ts';
 import AgalNull from 'magal/RT/values/primitive/AgalNull.ts';
 import interpreter from 'magal/RT/interpreter.ts';
+import { AgalReferenceError } from "magal/RT/values/complex/AgalError.ts";
+import parse from "magal/RT/values/parse.ts";
 
 export type NativeAgalFunctionConfig = (
   stack: IStack,
@@ -34,7 +36,6 @@ export default class AgalFunction extends AgalComplex {
     }
     this.set(stack, 'nombre', AgalString.from(name));
   }
-  set type(value: string) { }
   get type(): string {
     return `Función ${this.get(defaultStack, 'nombre')?.toString() ?? '<anonima>'}`;
   }
@@ -51,16 +52,23 @@ export default class AgalFunction extends AgalComplex {
       const { env, stmt } = this.stmt;
       if(stmt.body.length === 0) return null;
       const newEnv = env.createChild();
-      newEnv.set('este', stack, self, stmt);
+      newEnv.set('este', stack, self, {
+        col: stmt.col,
+        row: stmt.row,
+        constant: true,
+        keyword: true
+      });
       for (let i = 0; i < stmt.params.length; i++) {
         const param = stmt.params[i];
         if (typeof param === 'string') {
           newEnv.set(param, stack, args.shift() ?? AgalNull.from(), stmt);
         } else {
+          const exists = newEnv.has(param.identifier, stmt);
+          if(exists) return new AgalReferenceError(stack, `Parametro '${param.identifier}' ya ha sido declarado`).throw();
           newEnv.set(
             param.identifier,
             stack,
-            args.shift() ?? AgalNull.from(),
+            parse(args),
             stmt
           );
         }

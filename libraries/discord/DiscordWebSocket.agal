@@ -1,0 +1,62 @@
+importar 'clases/Error/solo' como Error;
+importar 'clases/Cadena' como Cadena;
+importar 'consola' como consola;
+importar 'tiempos' como tiempos;
+importar 'JSON' como JSON;
+importar 'ws' como WS;
+
+importar './constantes/Constantes.agal' como constantes;
+importar './constantes/Cargas.agal' como cargas;
+
+clase DiscordWebSocket{
+  __constructor__(cliente){
+    este.ws = WS();
+    este.cliente = cliente
+  }
+  conectar(token){
+    const instancia = este
+    este.ws.conectar(constantes.servicio);
+    este.ws.en('mensaje', fn mensaje(data){
+      const obj = JSON.descomprimir(data);
+      const evento = obj.t;
+      const s = obj.s;
+      const op = obj.op;
+      const d = obj.d;
+
+      si(op === 10){
+        instancia.intervalo = instancia.heartbeat(d.heartbeat_interval);
+        instancia.identificar(token);
+      } ent si(op === 11){
+        ret;
+      }
+      si(evento){
+        intentar{
+          const funcion = modulo.importar('./Eventos/' + evento + '.agal');
+          funcion(instancia.cliente, obj.d);
+        }capturar(e){
+          consola.pintar(e);
+        }
+      }
+    });
+    este.ws.en('error', fn error(e){
+      consola.pintar(e);
+    });
+    este.ws.en('cerrar', fn cerrar(){
+      instancia.intervalo & instancia.intervalo();
+    });
+  }
+  heartbeat(ms){
+    const instancia = este;
+    ret tiempos.intervalo(fn(){
+      instancia.ws.enviar(JSON.comprimir(cargas.Heartbeat));
+    }, ms);
+  }
+  identificar(token){
+    si(!token) {lanzar(Error('No se ha proporcionado ningún token'));}
+    si(!instanciaDe(token, Cadena)) {lanzar(Error('El token debe ser una cadena'));}
+    cargas.Identificar.d.token = token;
+    este.ws.enviar(JSON.comprimir(cargas.Identificar));
+  }
+}
+
+modulo.exportar = DiscordWebSocket;

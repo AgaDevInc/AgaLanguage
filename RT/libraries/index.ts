@@ -10,7 +10,9 @@ import Eventos from "magal/RT/libraries/Eventos.ts";
 import proceso from "magal/RT/libraries/proceso.ts";
 import consola from "magal/RT/libraries/consola.ts";
 import clases from "magal/RT/libraries/clases/index.ts";
-import ws from "magal/RT/libraries/ws.ts"
+import ws from "magal/RT/libraries/ws.ts";
+import JSON from "magal/RT/libraries/JSON.ts";
+import tiempos from "magal/RT/libraries/tiempos.ts";
 
 http(register);
 ListaEnteros(register);
@@ -21,5 +23,7 @@ proceso(register);
 consola(register);
 clases(register);
 ws(register);
+JSON(register);
+tiempos(register);
 
 export default register;
